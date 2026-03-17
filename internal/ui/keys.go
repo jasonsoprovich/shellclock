@@ -72,6 +72,20 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 	}
 }
 
+// timerKeyMap implements help.KeyMap for the timer view.
+type timerKeyMap struct{ km KeyMap }
+
+func (k timerKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.km.Pause, k.km.Stop, k.km.Reset, k.km.Esc}
+}
+
+func (k timerKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.km.Pause, k.km.Stop},
+		{k.km.Reset, k.km.Esc},
+	}
+}
+
 // inputKeyMap is shown while the text prompt is active.
 type inputKeyMap struct{ km KeyMap }
 

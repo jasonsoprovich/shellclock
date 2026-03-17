@@ -42,26 +42,34 @@ type App struct {
 	height int
 }
 
-// New creates an initialised App.
+// New creates an initialised App.  If a timer was running when the process
+// last exited it is already persisted in the store, so we open straight to the
+// timer view so the user sees the live elapsed time immediately.
 func New(store *model.Store) App {
 	keys := DefaultKeyMap()
-	return App{
-		store:   store,
-		keys:    keys,
-		current: viewTree,
-		tree:    NewTreeModel(store, keys),
-		timer:   NewTimerModel(store, keys),
-		report:  NewReportModel(store, keys),
-		edit:    NewEditModel(store, keys),
+	app := App{
+		store:  store,
+		keys:   keys,
+		tree:   NewTreeModel(store, keys),
+		timer:  NewTimerModel(store, keys),
+		report: NewReportModel(store, keys),
+		edit:   NewEditModel(store, keys),
 	}
+	if store.ActiveTimer != nil {
+		app.current = viewTimer
+	} else {
+		app.current = viewTree
+	}
+	return app
 }
 
+// Init starts the appropriate sub-model.  When a timer is already running it
+// delegates to TimerModel.Init() which starts the one-second tick chain.
 func (a App) Init() tea.Cmd {
-	cmds := []tea.Cmd{a.tree.Init()}
-	if a.store.ActiveTimer != nil && !a.store.ActiveTimer.Paused {
-		cmds = append(cmds, tick())
+	if a.current == viewTimer {
+		return a.timer.Init()
 	}
-	return tea.Batch(cmds...)
+	return nil
 }
 
 func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

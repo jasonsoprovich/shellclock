@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/jasonsoprovich/shellclock/internal/model"
 	"github.com/jasonsoprovich/shellclock/internal/util"
@@ -366,13 +367,26 @@ func (m *TreeModel) startTimerForCursor() {
 		return
 	}
 	item := m.items[m.cursor]
-	if item.isProject || m.store.ActiveTimer != nil {
+	if item.isProject {
 		return
 	}
+	// If the running timer belongs to this exact task, navigate back to it
+	// without starting a new one.  If it belongs to a different task, do
+	// nothing — only one timer can run at a time.
+	if m.store.ActiveTimer != nil {
+		if m.store.ActiveTimer.TaskID == item.taskID {
+			m.SelectedProjectID = item.projectID
+			m.SelectedTaskID = item.taskID
+			m.SwitchToTimer = true
+		}
+		return
+	}
+	now := time.Now()
 	m.store.ActiveTimer = &model.ActiveTimer{
-		ProjectID: item.projectID,
-		TaskID:    item.taskID,
-		Start:     time.Now(),
+		ProjectID:     item.projectID,
+		TaskID:        item.taskID,
+		OriginalStart: now,
+		Start:         now,
 	}
 	_ = m.store.Save()
 	m.SelectedProjectID = item.projectID
@@ -468,7 +482,7 @@ func (m TreeModel) renderItem(i, innerW int) string {
 			durText = "  " + util.FormatDuration(p.TotalSeconds())
 		}
 		if selected {
-			return StyleSelected.Width(innerW).Render(nameText + durText)
+			return highlightRow(nameText+durText, innerW)
 		}
 		return StyleProject.Render(nameText) + StyleDuration.Render(durText)
 	}
@@ -486,8 +500,7 @@ func (m TreeModel) renderItem(i, innerW int) string {
 	}
 
 	if selected {
-		plain := nameText + activeStr + durText
-		return StyleSelected.Width(innerW).Render(plain)
+		return highlightRow(nameText+activeStr+durText, innerW)
 	}
 	line := StyleTask.Render(nameText)
 	if activeStr != "" {
@@ -497,4 +510,24 @@ func (m TreeModel) renderItem(i, innerW int) string {
 		line += StyleDuration.Render(durText)
 	}
 	return line
+}
+
+// highlightRow renders text using the selection style padded to exactly w
+// visible columns.  Explicit padding is used instead of lipgloss Width() so
+// that the content is never word-wrapped — Width() pads but does not clip, and
+// any overflow onto a second line would carry the background colour, producing
+// the "highlight bleed" artifact.
+func highlightRow(text string, w int) string {
+	vis := lipgloss.Width(text)
+	switch {
+	case vis < w:
+		text += strings.Repeat(" ", w-vis)
+	case vis > w:
+		runes := []rune(text)
+		for len(runes) > 0 && lipgloss.Width(string(runes)) > w-1 {
+			runes = runes[:len(runes)-1]
+		}
+		text = string(runes) + "…"
+	}
+	return StyleSelected.Render(text)
 }

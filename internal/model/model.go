@@ -52,12 +52,12 @@ func (p *Project) TotalSeconds() int64 {
 
 // ActiveTimer persists an in-progress timer across restarts.
 type ActiveTimer struct {
-	ProjectID string    `json:"project_id"`
-	TaskID    string    `json:"task_id"`
-	SessionID string    `json:"session_id"`
-	Start     time.Time `json:"start"`
-	Paused    bool      `json:"paused"`
-	// AccumulatedSeconds holds time banked before a pause.
+	ProjectID     string    `json:"project_id"`
+	TaskID        string    `json:"task_id"`
+	OriginalStart time.Time `json:"original_start"` // when the timer was first created; never changes after a pause
+	Start         time.Time `json:"start"`          // reset to time.Now() on every resume
+	Paused        bool      `json:"paused"`
+	// AccumulatedSeconds banks elapsed time from all completed running intervals.
 	AccumulatedSeconds int64 `json:"accumulated_seconds"`
 }
 
