@@ -1,6 +1,9 @@
 package ui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/lipgloss"
+)
 
 // Catppuccin Mocha palette
 const (
@@ -15,13 +18,13 @@ const (
 	colorRed     = lipgloss.Color("#f38ba8")
 	colorMauve   = lipgloss.Color("#cba6f7")
 	colorPeach   = lipgloss.Color("#fab387")
+	colorTeal    = lipgloss.Color("#94e2d5")
 )
 
 var (
 	StylePanel = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(colorOverlay).
-			Padding(0, 1)
+			BorderForeground(colorOverlay)
 
 	StyleTitle = lipgloss.NewStyle().
 			Foreground(colorBlue).
@@ -42,9 +45,6 @@ var (
 	StyleError = lipgloss.NewStyle().
 			Foreground(colorRed)
 
-	StyleHelp = lipgloss.NewStyle().
-			Foreground(colorSubtext)
-
 	StyleProject = lipgloss.NewStyle().
 			Foreground(colorMauve).
 			Bold(true)
@@ -54,4 +54,24 @@ var (
 
 	StyleDuration = lipgloss.NewStyle().
 			Foreground(colorPeach)
+
+	StyleInputLabel = lipgloss.NewStyle().
+			Foreground(colorYellow).
+			Bold(true)
 )
+
+// catppuccinHelpStyles returns help.Styles using the Mocha palette.
+func catppuccinHelpStyles() help.Styles {
+	keyStyle  := lipgloss.NewStyle().Foreground(colorBlue)
+	descStyle := lipgloss.NewStyle().Foreground(colorSubtext)
+	sepStyle  := lipgloss.NewStyle().Foreground(colorOverlay)
+	return help.Styles{
+		ShortKey:       keyStyle,
+		ShortDesc:      descStyle,
+		ShortSeparator: sepStyle,
+		Ellipsis:       descStyle,
+		FullKey:        keyStyle,
+		FullDesc:       descStyle,
+		FullSeparator:  sepStyle,
+	}
+}

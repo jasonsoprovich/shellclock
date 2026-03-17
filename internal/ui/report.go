@@ -12,8 +12,10 @@ import (
 
 // ReportModel renders the summary table.
 type ReportModel struct {
-	store *model.Store
-	keys  KeyMap
+	store  *model.Store
+	keys   KeyMap
+	width  int
+	height int
 
 	SwitchToTree bool
 }
@@ -23,6 +25,11 @@ func NewReportModel(store *model.Store, keys KeyMap) ReportModel {
 }
 
 func (m ReportModel) Update(msg tea.Msg) (ReportModel, tea.Cmd) {
+	if ws, ok := msg.(tea.WindowSizeMsg); ok {
+		m.width = ws.Width
+		m.height = ws.Height
+		return m, nil
+	}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -66,7 +73,7 @@ func (m ReportModel) View() string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString("\n" + StyleHelp.Render("esc/q back"))
+	sb.WriteString("\n" + StyleDimmed.Render("esc/q back"))
 	return StylePanel.Render(sb.String())
 }
 

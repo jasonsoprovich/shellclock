@@ -19,6 +19,8 @@ type EditModel struct {
 	ProjectID string
 	TaskID    string
 	cursor    int
+	width     int
+	height    int
 
 	SwitchToTree bool
 }
@@ -36,6 +38,11 @@ func (m EditModel) sessions() []model.Session {
 }
 
 func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
+	if ws, ok := msg.(tea.WindowSizeMsg); ok {
+		m.width = ws.Width
+		m.height = ws.Height
+		return m, nil
+	}
 	sessions := m.sessions()
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -108,7 +115,7 @@ func (m EditModel) View() string {
 		total += s.DurationSeconds
 	}
 	sb.WriteString("\n" + StyleDuration.Render(fmt.Sprintf("Total: %s", util.FormatDuration(total))) + "\n")
-	sb.WriteString("\n" + StyleHelp.Render("↑/↓ navigate  d delete  n add placeholder  esc back"))
+	sb.WriteString("\n" + StyleDimmed.Render("↑/↓ navigate  d delete  n add placeholder  esc back"))
 
 	return strings.Join([]string{StylePanel.Render(sb.String())}, "")
 }

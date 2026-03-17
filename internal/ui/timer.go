@@ -14,8 +14,10 @@ import (
 
 // TimerModel manages the live timer view.
 type TimerModel struct {
-	store *model.Store
-	keys  KeyMap
+	store  *model.Store
+	keys   KeyMap
+	width  int
+	height int
 
 	SwitchToTree bool
 }
@@ -44,6 +46,11 @@ func (m TimerModel) elapsed() int64 {
 }
 
 func (m TimerModel) Update(msg tea.Msg) (TimerModel, tea.Cmd) {
+	if ws, ok := msg.(tea.WindowSizeMsg); ok {
+		m.width = ws.Width
+		m.height = ws.Height
+		return m, nil
+	}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -114,7 +121,7 @@ func (m TimerModel) View() string {
 	at := m.store.ActiveTimer
 	if at == nil {
 		sb.WriteString(StyleDimmed.Render("No active timer.") + "\n")
-		sb.WriteString("\n" + StyleHelp.Render("esc back"))
+		sb.WriteString("\n" + StyleDimmed.Render("esc back"))
 		return StylePanel.Render(sb.String())
 	}
 
@@ -143,7 +150,7 @@ func (m TimerModel) View() string {
 	sb.WriteString(fmt.Sprintf("%s  /  %s\n\n", StyleProject.Render(projectName), StyleTask.Render(taskName)))
 	sb.WriteString(StyleTimer.Render(util.FormatDurationShort(elapsed)) + "\n\n")
 	sb.WriteString(statusStyle.Render(status) + "\n")
-	sb.WriteString("\n" + StyleHelp.Render("p pause/resume  S stop & save  r reset  esc back"))
+	sb.WriteString("\n" + StyleDimmed.Render("p pause/resume  S stop & save  r reset  esc back"))
 
 	return StylePanel.Render(sb.String())
 }

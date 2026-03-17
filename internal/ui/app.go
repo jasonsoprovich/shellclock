@@ -18,7 +18,7 @@ const (
 	viewEdit
 )
 
-// tickMsg is sent every second to update a running timer.
+// tickMsg is sent every second to drive the live timer display.
 type tickMsg time.Time
 
 func tick() tea.Cmd {
@@ -65,33 +65,37 @@ func (a App) Init() tea.Cmd {
 }
 
 func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		a.width = msg.Width
-		a.height = msg.Height
+	// ctrl+c always quits regardless of active view or input mode.
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "ctrl+c" {
+		return a, tea.Quit
+	}
+
+	// Forward window size to every sub-model so they size themselves correctly.
+	if ws, ok := msg.(tea.WindowSizeMsg); ok {
+		a.width = ws.Width
+		a.height = ws.Height
+		a.tree, _ = a.tree.Update(ws)
+		a.timer, _ = a.timer.Update(ws)
+		a.report, _ = a.report.Update(ws)
+		a.edit, _ = a.edit.Update(ws)
 		return a, nil
-
-	case tea.KeyMsg:
-		switch {
-		case msg.String() == "ctrl+c":
-			return a, tea.Quit
-		case msg.String() == "q" && a.current == viewTree:
-			return a, tea.Quit
-		}
-
-	case tickMsg:
-		if a.store.ActiveTimer != nil && !a.store.ActiveTimer.Paused {
-			return a, tick()
-		}
 	}
 
 	var cmd tea.Cmd
+
 	switch a.current {
+	// ── Tree ───────────────────────────────────────────────────────────────
 	case viewTree:
 		a.tree, cmd = a.tree.Update(msg)
+
+		if a.tree.WantsQuit {
+			return a, tea.Quit
+		}
 		if a.tree.SwitchToTimer {
 			a.tree.SwitchToTimer = false
 			a.timer = NewTimerModel(a.store, a.keys)
+			a.timer.width = a.width
+			a.timer.height = a.height
 			a.current = viewTimer
 			return a, tea.Batch(cmd, a.timer.Init())
 		}
@@ -100,24 +104,30 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.edit = NewEditModel(a.store, a.keys)
 			a.edit.ProjectID = a.tree.SelectedProjectID
 			a.edit.TaskID = a.tree.SelectedTaskID
+			a.edit.width = a.width
+			a.edit.height = a.height
 			a.current = viewEdit
 			return a, cmd
 		}
 		if a.tree.SwitchToReport {
 			a.tree.SwitchToReport = false
 			a.report = NewReportModel(a.store, a.keys)
+			a.report.width = a.width
+			a.report.height = a.height
 			a.current = viewReport
 			return a, cmd
 		}
 
+	// ── Timer ──────────────────────────────────────────────────────────────
 	case viewTimer:
 		a.timer, cmd = a.timer.Update(msg)
 		if a.timer.SwitchToTree {
 			a.timer.SwitchToTree = false
-			a.tree = NewTreeModel(a.store, a.keys)
+			a.tree.buildItems() // refresh totals/indicator
 			a.current = viewTree
 		}
 
+	// ── Report ─────────────────────────────────────────────────────────────
 	case viewReport:
 		a.report, cmd = a.report.Update(msg)
 		if a.report.SwitchToTree {
@@ -125,11 +135,12 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.current = viewTree
 		}
 
+	// ── Edit ───────────────────────────────────────────────────────────────
 	case viewEdit:
 		a.edit, cmd = a.edit.Update(msg)
 		if a.edit.SwitchToTree {
 			a.edit.SwitchToTree = false
-			a.tree = NewTreeModel(a.store, a.keys)
+			a.tree.buildItems() // refresh session totals
 			a.current = viewTree
 		}
 	}
