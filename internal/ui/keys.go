@@ -110,3 +110,29 @@ func (k inputKeyMap) ShortHelp() []key.Binding {
 func (k inputKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{{k.km.Enter, k.km.Esc}}
 }
+
+// editKeyMap implements help.KeyMap for the session edit view (normal mode).
+type editKeyMap struct{ km KeyMap }
+
+func (k editKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.km.Up, k.km.Down, k.km.NewTask, k.km.Edit, k.km.Delete, k.km.Esc, k.km.Help}
+}
+
+func (k editKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.km.Up, k.km.Down},
+		{k.km.NewTask, k.km.Edit, k.km.Delete},
+		{k.km.Esc, k.km.Help},
+	}
+}
+
+// editFormKeyMap is shown while the add/edit form is active.
+type editFormKeyMap struct{ km KeyMap }
+
+func (k editFormKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.km.Enter, k.km.Esc}
+}
+
+func (k editFormKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{{k.km.Enter, k.km.Esc}}
+}
