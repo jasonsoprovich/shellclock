@@ -86,6 +86,20 @@ func (k timerKeyMap) FullHelp() [][]key.Binding {
 	}
 }
 
+// reportKeyMap implements help.KeyMap for the report view.
+type reportKeyMap struct{ km KeyMap }
+
+func (k reportKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.km.Up, k.km.Down, k.km.Esc, k.km.Help}
+}
+
+func (k reportKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.km.Up, k.km.Down},
+		{k.km.Esc},
+	}
+}
+
 // inputKeyMap is shown while the text prompt is active.
 type inputKeyMap struct{ km KeyMap }
 
