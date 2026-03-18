@@ -96,11 +96,11 @@ func (k reportKeyMap) ShortHelp() []key.Binding {
 func (k reportKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.km.Up, k.km.Down},
-		{k.km.Esc},
+		{k.km.Esc, k.km.Help},
 	}
 }
 
-// inputKeyMap is shown while the text prompt is active.
+// inputKeyMap is shown while the tree's text prompt is active.
 type inputKeyMap struct{ km KeyMap }
 
 func (k inputKeyMap) ShortHelp() []key.Binding {
@@ -112,27 +112,44 @@ func (k inputKeyMap) FullHelp() [][]key.Binding {
 }
 
 // editKeyMap implements help.KeyMap for the session edit view (normal mode).
+// Inline bindings override the global KeyMap labels to be session-specific.
 type editKeyMap struct{ km KeyMap }
 
 func (k editKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.km.Up, k.km.Down, k.km.NewTask, k.km.Edit, k.km.Delete, k.km.Esc, k.km.Help}
+	addSess := key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "add session"))
+	editSess := key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit session"))
+	delSess := key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete session"))
+	return []key.Binding{
+		k.km.Up, k.km.Down,
+		addSess, editSess, delSess,
+		k.km.Esc, k.km.Help,
+	}
 }
 
 func (k editKeyMap) FullHelp() [][]key.Binding {
+	addSess := key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "add session"))
+	editSess := key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit session"))
+	delSess := key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete session"))
 	return [][]key.Binding{
 		{k.km.Up, k.km.Down},
-		{k.km.NewTask, k.km.Edit, k.km.Delete},
+		{addSess, editSess, delSess},
 		{k.km.Esc, k.km.Help},
 	}
 }
 
-// editFormKeyMap is shown while the add/edit form is active.
+// editFormKeyMap is shown while the add/edit session form is active.
 type editFormKeyMap struct{ km KeyMap }
 
 func (k editFormKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.km.Enter, k.km.Esc}
+	tab := key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next field"))
+	return []key.Binding{tab, k.km.Enter, k.km.Esc}
 }
 
 func (k editFormKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{k.km.Enter, k.km.Esc}}
+	tab := key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next field"))
+	shiftTab := key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "prev field"))
+	return [][]key.Binding{
+		{tab, shiftTab},
+		{k.km.Enter, k.km.Esc},
+	}
 }

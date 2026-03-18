@@ -21,9 +21,9 @@ const timeFmt = "2006-01-02 15:04"
 type editInputMode int
 
 const (
-	editModeNone   editInputMode = iota
-	editModeAdd                  // entering times for a brand-new session
-	editModeEdit                 // editing an existing session's times
+	editModeNone editInputMode = iota
+	editModeAdd                // entering times for a brand-new session
+	editModeEdit               // editing an existing session's times
 )
 
 // editField tracks which of the two inputs is focused.
@@ -32,6 +32,17 @@ type editField int
 const (
 	fieldStart editField = iota
 	fieldEnd
+)
+
+// Session list column visible widths.
+// Layout: [colIdx][colStart][colEnd][colDur] = 3+18+18+11 = 50
+// The start and end columns include a 2-char trailing gap so adjacent
+// columns read as separated without an explicit separator character.
+const (
+	colIdx   = 3
+	colStart = 18 // 16 content + 2 trailing gap
+	colEnd   = 18 // 16 content + 2 trailing gap
+	colDur   = 11 // right-aligned duration
 )
 
 // EditModel allows viewing, adding, editing, and deleting sessions for a task.
@@ -48,12 +59,12 @@ type EditModel struct {
 	showFull  bool
 
 	// input state
-	inputMode    editInputMode
-	activeField  editField
-	startInput   textinput.Model
-	endInput     textinput.Model
-	errMsg       string
-	editingID    string // session ID being edited (editModeEdit only)
+	inputMode   editInputMode
+	activeField editField
+	startInput  textinput.Model
+	endInput    textinput.Model
+	errMsg      string
+	editingID   string // session ID being edited (editModeEdit only)
 
 	SwitchToTree bool
 }
@@ -94,16 +105,29 @@ func (m EditModel) sessions() []model.Session {
 }
 
 // listHeight returns how many session rows fit in the view.
-// Fixed overhead: border(2) + header(4) + total(2) + footer(2) = 10.
-// In input mode add 4 more rows for the form.
+//
+// Fixed content lines (always present, no form):
+//
+//	title + rule + blank                   = 3
+//	column header                          = 1
+//	scroll hint (always reserved)          = 1
+//	blank + total                          = 2
+//	blank + help                           = 2
+//	border                                 = 2
+//	total                                  = 11
+//
+// Optional lines added to fixed:
+//
+//	form: blank + label + start + end + err = +5
+//	full help vs short help                 = +3
 func (m *EditModel) listHeight() int {
 	h := m.height
 	if h == 0 {
 		h = 24
 	}
-	fixed := 10
+	fixed := 11
 	if m.inputMode != editModeNone {
-		fixed += 4
+		fixed += 5 // blank + label + start + end + error
 	}
 	if m.showFull {
 		fixed += 3
@@ -148,12 +172,12 @@ func (m *EditModel) commitForm() {
 
 	start, err := time.ParseInLocation(timeFmt, startStr, time.Local)
 	if err != nil {
-		m.errMsg = "invalid start time — use 2006-01-02 15:04"
+		m.errMsg = "invalid start — use 2006-01-02 15:04"
 		return
 	}
 	end, err := time.ParseInLocation(timeFmt, endStr, time.Local)
 	if err != nil {
-		m.errMsg = "invalid end time — use 2006-01-02 15:04"
+		m.errMsg = "invalid end — use 2006-01-02 15:04"
 		return
 	}
 	if !end.After(start) {
@@ -195,23 +219,31 @@ func (m *EditModel) closeForm() {
 	m.scrollToCursor()
 }
 
-func (m *EditModel) openAdd() {
+// openAdd starts the add-session form and returns the Focus tea.Cmd so the
+// cursor blink animation starts immediately.
+func (m *EditModel) openAdd() tea.Cmd {
 	m.inputMode = editModeAdd
 	m.errMsg = ""
 	m.activeField = fieldStart
 	m.startInput.SetValue("")
 	m.endInput.SetValue("")
-	_ = m.startInput.Focus()
+	return m.startInput.Focus()
 }
 
-func (m *EditModel) openEdit(sess model.Session) {
+// openEdit pre-fills the form with sess's existing times and returns the
+// Focus tea.Cmd.
+func (m *EditModel) openEdit(sess model.Session) tea.Cmd {
 	m.inputMode = editModeEdit
 	m.errMsg = ""
 	m.editingID = sess.ID
 	m.activeField = fieldStart
 	m.startInput.SetValue(sess.Start.Format(timeFmt))
-	m.endInput.SetValue(sess.End.Format(timeFmt))
-	_ = m.startInput.Focus()
+	endVal := ""
+	if !sess.End.IsZero() {
+		endVal = sess.End.Format(timeFmt)
+	}
+	m.endInput.SetValue(endVal)
+	return m.startInput.Focus()
 }
 
 // ── Update ──────────────────────────────────────────────────────────────────
@@ -250,24 +282,24 @@ func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 
 		case tea.KeyEnter:
 			if m.activeField == fieldStart {
-				// Advance to the end field on Enter in start field.
+				// Advance to end field on Enter in start.
 				m.activeField = fieldEnd
 				m.startInput.Blur()
 				cmd = m.endInput.Focus()
 				return m, cmd
 			}
-			// Enter in end field commits the form.
+			// Enter in end field commits.
 			m.commitForm()
 			return m, nil
 		}
 
-		// Route keystrokes to the focused input.
+		// Route keystrokes to the focused input; clear any stale error.
 		if m.activeField == fieldStart {
 			m.startInput, cmd = m.startInput.Update(msg)
 		} else {
 			m.endInput, cmd = m.endInput.Update(msg)
 		}
-		m.errMsg = "" // clear error on any edit
+		m.errMsg = ""
 		return m, cmd
 	}
 
@@ -291,11 +323,11 @@ func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 			}
 
 		case "n":
-			m.openAdd()
+			cmd = m.openAdd()
 
 		case "e":
 			if len(sessions) > 0 && m.cursor < len(sessions) {
-				m.openEdit(sessions[m.cursor])
+				cmd = m.openEdit(sessions[m.cursor])
 			}
 
 		case "d":
@@ -314,7 +346,7 @@ func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 		}
 	}
 
-	return m, nil
+	return m, cmd
 }
 
 // ── View ─────────────────────────────────────────────────────────────────────
@@ -344,6 +376,13 @@ func (m EditModel) View() string {
 	sb.WriteString(StyleDimmed.Render(strings.Repeat("─", innerW)))
 	sb.WriteString("\n\n")
 
+	// ── Column header — always shown for layout stability ──────────────────
+	hdrIdx := lipgloss.NewStyle().Width(colIdx).Render(StyleDimmed.Render("#"))
+	hdrStart := lipgloss.NewStyle().Width(colStart).Render(StyleDimmed.Render("Start"))
+	hdrEnd := lipgloss.NewStyle().Width(colEnd).Render(StyleDimmed.Render("End"))
+	hdrDur := lipgloss.NewStyle().Width(colDur).Align(lipgloss.Right).Render(StyleDimmed.Render("Duration"))
+	sb.WriteString(hdrIdx + hdrStart + hdrEnd + hdrDur + "\n")
+
 	// ── Session list ────────────────────────────────────────────────────────
 	sessions := m.sessions()
 	lh := m.listHeight()
@@ -352,9 +391,6 @@ func (m EditModel) View() string {
 		end = len(sessions)
 	}
 
-	// Column widths: idx(3) + gap(2) + start(16) + gap(2) + end(16) + gap(2) + dur(11)
-	const startW, endW, durW = 16, 16, 11
-
 	if len(sessions) == 0 {
 		sb.WriteString(StyleDimmed.Render("No sessions — press n to add one."))
 		sb.WriteString("\n")
@@ -362,13 +398,6 @@ func (m EditModel) View() string {
 			sb.WriteString("\n")
 		}
 	} else {
-		// Column header.
-		idxCol := lipgloss.NewStyle().Width(3).Render(StyleDimmed.Render("#"))
-		startCol := lipgloss.NewStyle().Width(startW + 2).Render(StyleDimmed.Render("Start"))
-		endCol := lipgloss.NewStyle().Width(endW + 2).Render(StyleDimmed.Render("End"))
-		durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).Render(StyleDimmed.Render("Duration"))
-		sb.WriteString(idxCol + startCol + endCol + durCol + "\n")
-
 		for i := m.offset; i < end; i++ {
 			sess := sessions[i]
 			selected := i == m.cursor
@@ -382,26 +411,37 @@ func (m EditModel) View() string {
 			durStr := util.FormatDuration(sess.DurationSeconds)
 
 			if selected {
-				row := fmt.Sprintf("%-3s  %-16s  %-16s  %11s", numStr, startStr, endStr, durStr)
+				// Use the same column widths as non-selected rows so the
+				// highlighted row never shifts the layout.
+				// colIdx=3  colStart=18  colEnd=18  colDur=11 → total=50
+				row := fmt.Sprintf("%-*s%-*s%-*s%*s",
+					colIdx, numStr,
+					colStart, startStr,
+					colEnd, endStr,
+					colDur, durStr,
+				)
 				sb.WriteString(highlightRow(row, innerW))
 			} else {
-				idxC := lipgloss.NewStyle().Width(3).Render(StyleDimmed.Render(numStr))
-				startC := lipgloss.NewStyle().Width(startW + 2).Render(StyleTask.Render(startStr))
-				endC := lipgloss.NewStyle().Width(endW + 2).Render(StyleTask.Render(endStr))
-				durC := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).Render(StyleDuration.Render(durStr))
+				idxC := lipgloss.NewStyle().Width(colIdx).Render(StyleDimmed.Render(numStr))
+				startC := lipgloss.NewStyle().Width(colStart).Render(StyleTask.Render(startStr))
+				endC := lipgloss.NewStyle().Width(colEnd).Render(StyleTask.Render(endStr))
+				durC := lipgloss.NewStyle().Width(colDur).Align(lipgloss.Right).
+					Render(StyleDuration.Render(durStr))
 				sb.WriteString(idxC + startC + endC + durC)
 			}
 			sb.WriteString("\n")
 		}
 
-		// Pad unused rows.
+		// Pad unused rows to stabilise layout height.
 		rendered := end - m.offset
 		for i := rendered; i < lh; i++ {
 			sb.WriteString("\n")
 		}
 	}
 
-	// Scroll hint.
+	// Scroll hint — always written as exactly one line so layout height stays
+	// stable regardless of whether the list is scrollable.
+	scrollHint := ""
 	canUp := m.offset > 0
 	canDown := m.offset+lh < len(sessions)
 	if canUp || canDown {
@@ -412,9 +452,9 @@ func (m EditModel) View() string {
 		if canDown {
 			parts = append(parts, "↓ more below")
 		}
-		sb.WriteString(StyleDimmed.Render(strings.Join(parts, "   ")))
-		sb.WriteString("\n")
+		scrollHint = StyleDimmed.Render(strings.Join(parts, "   "))
 	}
+	sb.WriteString(scrollHint + "\n")
 
 	// ── Total ───────────────────────────────────────────────────────────────
 	var total int64
@@ -426,6 +466,8 @@ func (m EditModel) View() string {
 	sb.WriteString("\n")
 
 	// ── Input form ──────────────────────────────────────────────────────────
+	// The form occupies exactly 5 lines (blank + label + start + end + error)
+	// so listHeight() can add a fixed +5 when inputMode != None.
 	if m.inputMode != editModeNone {
 		sb.WriteString("\n")
 		label := "Add session"
@@ -435,21 +477,23 @@ func (m EditModel) View() string {
 		sb.WriteString(StyleInputLabel.Render(label))
 		sb.WriteString("\n")
 
-		startPrompt := "  start: "
-		endPrompt := "    end: "
+		var startPrompt, endPrompt string
 		if m.activeField == fieldStart {
-			startPrompt = StyleTimer.Render("▸ start: ")
+			startPrompt = StyleTimer.Render("▸") + StyleDimmed.Render(" start: ")
 			endPrompt = StyleDimmed.Render("  end:   ")
 		} else {
 			startPrompt = StyleDimmed.Render("  start: ")
-			endPrompt = StyleTimer.Render("▸ end:   ")
+			endPrompt = StyleTimer.Render("▸") + StyleDimmed.Render(" end:   ")
 		}
 		sb.WriteString(startPrompt + m.startInput.View() + "\n")
 		sb.WriteString(endPrompt + m.endInput.View() + "\n")
 
+		// Error line is always written (blank when no error) to keep layout stable.
+		errLine := ""
 		if m.errMsg != "" {
-			sb.WriteString(StyleError.Render("  " + m.errMsg) + "\n")
+			errLine = StyleError.Render("  " + m.errMsg)
 		}
+		sb.WriteString(errLine + "\n")
 	}
 
 	// ── Help bar ─────────────────────────────────────────────────────────────

@@ -33,11 +33,11 @@ type reportRow struct {
 
 // ReportModel renders the time-tracking summary.
 type ReportModel struct {
-	store  *model.Store
-	keys   KeyMap
-	width  int
-	height int
-	help   help.Model
+	store    *model.Store
+	keys     KeyMap
+	width    int
+	height   int
+	help     help.Model
 	showFull bool
 
 	rows   []reportRow
@@ -66,13 +66,28 @@ func (m *ReportModel) buildRows() {
 }
 
 // listHeight returns the number of data rows the view can display at once.
-// Fixed overhead (border=2, header=4, footer=2) = 8.
+//
+// Fixed content lines (always present):
+//
+//	header: title+total (1) + rule (1)     = 2
+//	scroll hint (always reserved)          = 1
+//	blank + help                           = 2
+//	border                                 = 2
+//	total                                  = 7
+//
+// Optional lines added to fixed:
+//
+//	active timer notice                    +1
+//	full help vs short help                +3
 func (m *ReportModel) listHeight() int {
 	h := m.height
 	if h == 0 {
 		h = 24
 	}
-	fixed := 8
+	fixed := 7
+	if m.store.ActiveTimer != nil {
+		fixed++ // timer notice line is always written when timer is active
+	}
 	if m.showFull {
 		fixed += 3
 	}
@@ -174,8 +189,8 @@ func (m ReportModel) View() string {
 	header.WriteString(StyleDimmed.Render(strings.Repeat("─", innerW)))
 	header.WriteString("\n")
 
-	// Active-timer notice.
-	timerNotice := ""
+	// Active-timer notice — always written as a line when timer is active so
+	// listHeight() can safely add 1 to fixed when store.ActiveTimer != nil.
 	if m.store.ActiveTimer != nil {
 		at := m.store.ActiveTimer
 		p := m.store.FindProject(at.ProjectID)
@@ -187,10 +202,18 @@ func (m ReportModel) View() string {
 		if t != nil {
 			tName = truncate(t.Name, 20)
 		}
-		elapsed := int64(time.Since(at.Start).Seconds()) + at.AccumulatedSeconds
-		timerNotice = StyleTimer.Render("⚡ ") +
-			StyleDimmed.Render(fmt.Sprintf("%s › %s  %s  (not yet saved)",
-				pName, tName, util.FormatDuration(elapsed)))
+		// Only add time.Since when the timer is not paused; AccumulatedSeconds
+		// already banks the interval up to the most recent pause.
+		elapsed := at.AccumulatedSeconds
+		if !at.Paused {
+			elapsed += int64(time.Since(at.Start).Seconds())
+		}
+		header.WriteString(
+			StyleTimer.Render("⚡ ") +
+				StyleDimmed.Render(fmt.Sprintf("%s › %s  %s  (not yet saved)",
+					pName, tName, util.FormatDuration(elapsed))) +
+				"\n",
+		)
 	}
 
 	// ── Row list ──────────────────────────────────────────────────────────
@@ -201,57 +224,68 @@ func (m ReportModel) View() string {
 	}
 
 	var body strings.Builder
-	for i := m.offset; i < end; i++ {
-		row := m.rows[i]
-		switch row.kind {
-		case reportRowBlank:
-			body.WriteString("\n")
 
-		case reportRowProject:
-			p := m.store.FindProject(row.projectID)
-			if p == nil {
-				continue
-			}
-			secs := p.TotalSeconds()
-			name := truncate(p.Name, nameW-2) // "▸ " prefix = 2
-			nameCol := lipgloss.NewStyle().Width(nameW).Render(
-				StyleProject.Render("▸ " + name),
-			)
-			barCol := renderBar(secs, grandTotal, barW)
-			durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
-				Render(StyleDuration.Render(util.FormatDuration(secs)))
-			body.WriteString(nameCol + strings.Repeat(" ", gap) + barCol + " " + durCol)
+	// Empty state: render the message as the first body row, then pad.
+	if len(m.rows) == 0 {
+		body.WriteString(StyleDimmed.Render("No data yet — create a project and track some time."))
+		body.WriteString("\n")
+		for i := 1; i < lh; i++ {
 			body.WriteString("\n")
+		}
+	} else {
+		for i := m.offset; i < end; i++ {
+			row := m.rows[i]
+			switch row.kind {
+			case reportRowBlank:
+				body.WriteString("\n")
 
-		case reportRowTask:
-			p := m.store.FindProject(row.projectID)
-			t := m.store.FindTask(row.projectID, row.taskID)
-			if p == nil || t == nil {
-				continue
+			case reportRowProject:
+				p := m.store.FindProject(row.projectID)
+				if p == nil {
+					continue
+				}
+				secs := p.TotalSeconds()
+				name := truncate(p.Name, nameW-2) // "▸ " prefix = 2
+				nameCol := lipgloss.NewStyle().Width(nameW).Render(
+					StyleProject.Render("▸ " + name),
+				)
+				barCol := renderBar(secs, grandTotal, barW)
+				durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
+					Render(StyleDuration.Render(util.FormatDuration(secs)))
+				body.WriteString(nameCol + strings.Repeat(" ", gap) + barCol + " " + durCol)
+				body.WriteString("\n")
+
+			case reportRowTask:
+				p := m.store.FindProject(row.projectID)
+				t := m.store.FindTask(row.projectID, row.taskID)
+				if p == nil || t == nil {
+					continue
+				}
+				secs := t.TotalSeconds()
+				name := truncate(t.Name, nameW-4) // "  · " prefix = 4
+				nameCol := lipgloss.NewStyle().Width(nameW).Render(
+					StyleDimmed.Render("  · ") + StyleTask.Render(name),
+				)
+				barCol := renderBar(secs, p.TotalSeconds(), barW)
+				durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
+					Render(StyleDuration.Render(util.FormatDuration(secs)))
+				body.WriteString(nameCol + strings.Repeat(" ", gap) + barCol + " " + durCol)
+				body.WriteString("\n")
 			}
-			secs := t.TotalSeconds()
-			name := truncate(t.Name, nameW-4) // "  · " prefix = 4
-			nameCol := lipgloss.NewStyle().Width(nameW).Render(
-				StyleDimmed.Render("  · ") + StyleTask.Render(name),
-			)
-			barCol := renderBar(secs, p.TotalSeconds(), barW)
-			durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
-				Render(StyleDuration.Render(util.FormatDuration(secs)))
-			body.WriteString(nameCol + strings.Repeat(" ", gap) + barCol + " " + durCol)
+		}
+
+		// Pad unused rows to stabilise layout.
+		rendered := end - m.offset
+		for i := rendered; i < lh; i++ {
 			body.WriteString("\n")
 		}
 	}
 
-	// Pad unused rows to stabilise layout.
-	rendered := end - m.offset
-	for i := rendered; i < lh; i++ {
-		body.WriteString("\n")
-	}
-
-	// Scroll indicator.
+	// Scroll indicator — always written as exactly one line so layout height
+	// stays stable regardless of whether the list is scrollable.
+	scrollHint := ""
 	canScrollUp := m.offset > 0
 	canScrollDown := m.offset+lh < len(m.rows)
-	var scrollHint string
 	if canScrollUp || canScrollDown {
 		parts := []string{}
 		if canScrollUp {
@@ -260,13 +294,7 @@ func (m ReportModel) View() string {
 		if canScrollDown {
 			parts = append(parts, "↓ more below")
 		}
-		scrollHint = StyleDimmed.Render(strings.Join(parts, "   ")) + "\n"
-	}
-
-	// Empty state.
-	emptyMsg := ""
-	if len(m.store.Projects) == 0 {
-		emptyMsg = StyleDimmed.Render("No data yet — create a project and track some time.")
+		scrollHint = StyleDimmed.Render(strings.Join(parts, "   "))
 	}
 
 	// ── Help bar ──────────────────────────────────────────────────────────
@@ -276,16 +304,8 @@ func (m ReportModel) View() string {
 	// ── Assemble ──────────────────────────────────────────────────────────
 	var sb strings.Builder
 	sb.WriteString(header.String())
-	if timerNotice != "" {
-		sb.WriteString(timerNotice + "\n")
-	}
-	if emptyMsg != "" {
-		sb.WriteString(emptyMsg + "\n")
-	}
 	sb.WriteString(body.String())
-	if scrollHint != "" {
-		sb.WriteString(scrollHint)
-	}
+	sb.WriteString(scrollHint + "\n") // always 1 line (blank when not scrollable)
 	sb.WriteString("\n")
 	sb.WriteString(helpStr)
 
