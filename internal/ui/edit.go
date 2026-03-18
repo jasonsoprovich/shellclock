@@ -511,5 +511,5 @@ func (m EditModel) View() string {
 	}
 	sb.WriteString(m.help.View(km))
 
-	return StylePanel.Width(innerW).Padding(0, 1).Render(sb.String())
+	return StylePanel.Width(innerW + 2).Padding(0, 1).Render(sb.String())
 }

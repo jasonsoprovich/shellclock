@@ -311,7 +311,7 @@ func (m ReportModel) View() string {
 	sb.WriteString("\n")
 	sb.WriteString(helpStr)
 
-	return StylePanel.Width(innerW).Padding(0, 1).Render(sb.String())
+	return StylePanel.Width(innerW + 2).Padding(0, 1).Render(sb.String())
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

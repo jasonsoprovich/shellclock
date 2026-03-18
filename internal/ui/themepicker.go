@@ -159,5 +159,5 @@ func (m ThemePickerModel) View() string {
 	m.help.Width = innerW
 	sb.WriteString(m.help.View(themePickerKeyMap{m.keys}))
 
-	return StylePanel.Width(innerW).Padding(0, 1).Render(sb.String())
+	return StylePanel.Width(innerW + 2).Padding(0, 1).Render(sb.String())
 }

@@ -564,7 +564,7 @@ func (m TreeModel) View() string {
 	sb.WriteString(m.help.View(km))
 
 	return StylePanel.
-		Width(innerW).
+		Width(innerW + 2).
 		Padding(0, 1).
 		Render(sb.String())
 }
