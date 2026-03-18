@@ -16,6 +16,7 @@ type KeyMap struct {
 	NewTask      key.Binding
 	Delete       key.Binding
 	Edit         key.Binding
+	Rename       key.Binding
 	Start        key.Binding
 	Pause        key.Binding
 	Stop         key.Binding
@@ -39,6 +40,7 @@ func DefaultKeyMap() KeyMap {
 		NewTask:     key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new task")),
 		Delete:      key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
 		Edit:        key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit sessions")),
+		Rename:      key.NewBinding(key.WithKeys("E"), key.WithHelp("E", "rename")),
 		Start:       key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "start timer")),
 		Pause:       key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "pause/resume")),
 		Stop:        key.NewBinding(key.WithKeys("S"), key.WithHelp("S", "stop & save")),
@@ -66,7 +68,7 @@ func (k treeKeyMap) ShortHelp() []key.Binding {
 func (k treeKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.km.Up, k.km.Down, k.km.Left, k.km.Right},
-		{k.km.NewProject, k.km.NewTask, k.km.Delete},
+		{k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete},
 		{k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker},
 		{k.km.Start, k.km.Pause, k.km.Stop, k.km.Reset},
 		{k.km.Quit, k.km.Help},

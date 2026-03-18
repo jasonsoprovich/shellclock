@@ -20,6 +20,7 @@ const (
 	inputNone    inputMode = iota
 	inputProject           // naming a new project
 	inputTask              // naming a new task
+	inputRename            // renaming an existing project or task
 )
 
 // treeItem is one visible row in the flattened tree.
@@ -196,19 +197,19 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			case tea.KeyEnter:
 				name := strings.TrimSpace(m.textInput.Value())
 				if name != "" {
-					if m.mode == inputProject {
+					switch m.mode {
+					case inputProject:
 						p := m.store.AddProject(name)
 						_ = m.store.Save()
 						m.expanded[p.ID] = true
 						m.buildItems()
-						// Move cursor to the new project row.
 						for i, item := range m.items {
 							if item.isProject && item.projectID == p.ID {
 								m.cursor = i
 								break
 							}
 						}
-					} else { // inputTask
+					case inputTask:
 						t := m.store.AddTask(m.parentID, name)
 						_ = m.store.Save()
 						m.expanded[m.parentID] = true
@@ -221,6 +222,15 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 								}
 							}
 						}
+					case inputRename:
+						item := m.items[m.cursor]
+						if item.isProject {
+							m.store.RenameProject(item.projectID, name)
+						} else {
+							m.store.RenameTask(item.projectID, item.taskID, name)
+						}
+						_ = m.store.Save()
+						m.buildItems()
 					}
 				}
 				m.mode = inputNone
@@ -386,6 +396,18 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 				cmd = tick()
 			}
 
+		case "E":
+			if len(m.items) == 0 {
+				break
+			}
+			item := m.items[m.cursor]
+			m.mode = inputRename
+			m.textInput.Placeholder = "New name…"
+			m.textInput.SetValue(item.name)
+			m.textInput.CursorEnd()
+			cmd = m.textInput.Focus()
+			return m, cmd
+
 		case "e":
 			if len(m.items) == 0 {
 				break
@@ -513,9 +535,14 @@ func (m TreeModel) View() string {
 
 	// ── Input prompt (only in input mode) ─────────────────────────────────
 	if m.mode != inputNone {
-		label := "New project"
-		if m.mode == inputTask {
+		var label string
+		switch m.mode {
+		case inputProject:
+			label = "New project"
+		case inputTask:
 			label = "New task"
+		case inputRename:
+			label = "Rename"
 		}
 		sb.WriteString("\n")
 		sb.WriteString(StyleInputLabel.Render(label+":") + " " + m.textInput.View())

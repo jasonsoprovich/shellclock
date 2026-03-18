@@ -148,6 +148,13 @@ func (s *Store) DeleteProject(id string) {
 	}
 }
 
+func (s *Store) RenameProject(id, name string) {
+	p := s.FindProject(id)
+	if p != nil {
+		p.Name = name
+	}
+}
+
 // --- Task helpers ---
 
 func (s *Store) AddTask(projectID, name string) *Task {
@@ -171,6 +178,13 @@ func (s *Store) FindTask(projectID, taskID string) *Task {
 		}
 	}
 	return nil
+}
+
+func (s *Store) RenameTask(projectID, taskID, name string) {
+	t := s.FindTask(projectID, taskID)
+	if t != nil {
+		t.Name = name
+	}
 }
 
 func (s *Store) DeleteTask(projectID, taskID string) {

@@ -18,6 +18,7 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Create project** (`N`) — inline text input prompt
 - [x] **Create task** (`n`) — inline text input prompt, added under focused project
 - [x] **Delete project or task** (`d`) — removes entry and all child data; clamps cursor
+- [x] **Rename project or task** (`E`) — inline text input pre-filled with current name; edit and confirm with enter
 - [x] **Time totals** — project and task totals shown inline in the tree
 - [x] **Live timer overview** — active task row shows `● 00:05:32` / `⏸ 00:05:32`; status line below title shows project › task + elapsed at all times
 - [x] **Timer controls from tree** — `s` start, `p` pause/resume, `S` stop & save, `r` reset without leaving the overview

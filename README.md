@@ -85,6 +85,7 @@ The collapsible project/task list. When a timer is running, the active task and 
 | `←` / `h` | Collapse project |
 | `N` | New project |
 | `n` | New task (under focused project) |
+| `E` | Rename focused project or task |
 | `d` | Delete focused project or task |
 | `enter` | Open task detail view |
 | `e` | Open session editor for focused task |
