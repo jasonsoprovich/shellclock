@@ -66,6 +66,11 @@ type EditModel struct {
 	errMsg      string
 	editingID   string // session ID being edited (editModeEdit only)
 
+	// confirm-delete modal
+	confirmActive    bool
+	confirmMsg       string
+	confirmSessionID string
+
 	SwitchToTree bool
 }
 
@@ -306,6 +311,25 @@ func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 		return m, cmd
 	}
 
+	// ── Confirm-delete modal ──────────────────────────────────────────────
+	if m.confirmActive && isKey {
+		switch key.String() {
+		case "y":
+			m.store.DeleteSession(m.ProjectID, m.TaskID, m.confirmSessionID)
+			_ = m.store.Save()
+			m.clampCursor()
+			m.scrollToCursor()
+			m.confirmActive = false
+			m.confirmMsg = ""
+			m.confirmSessionID = ""
+		case "n", "esc":
+			m.confirmActive = false
+			m.confirmMsg = ""
+			m.confirmSessionID = ""
+		}
+		return m, nil
+	}
+
 	// ── Normal navigation mode ────────────────────────────────────────────
 	if isKey {
 		sessions := m.sessions()
@@ -336,10 +360,9 @@ func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 		case "d":
 			if len(sessions) > 0 && m.cursor < len(sessions) {
 				sess := sessions[m.cursor]
-				m.store.DeleteSession(m.ProjectID, m.TaskID, sess.ID)
-				_ = m.store.Save()
-				m.clampCursor()
-				m.scrollToCursor()
+				m.confirmMsg = fmt.Sprintf("Delete session %d (%s)?", m.cursor+1, sess.Start.Format("2006-01-02 15:04"))
+				m.confirmSessionID = sess.ID
+				m.confirmActive = true
 			}
 
 		case "?":
@@ -511,5 +534,9 @@ func (m EditModel) View() string {
 	}
 	sb.WriteString(m.help.View(km))
 
-	return StylePanel.Width(innerW + 2).Padding(0, 1).Render(sb.String())
+	panel := StylePanel.Width(innerW + 2).Padding(0, 1).Render(sb.String())
+	if m.confirmActive {
+		return renderConfirmOverlay(panel, m.confirmMsg, m.width, m.height)
+	}
+	return panel
 }

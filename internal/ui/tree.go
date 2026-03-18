@@ -52,14 +52,20 @@ type TreeModel struct {
 	help     help.Model
 	showFull bool
 
+	// confirm-delete modal
+	confirmActive bool
+	confirmMsg    string
+	confirmProjID string // project to delete (or parent of task)
+	confirmTaskID string // task to delete; empty → delete the project
+
 	// signals consumed by App
-	WantsQuit            bool
-	SwitchToTaskDetail   bool
-	SwitchToEdit         bool
-	SwitchToReport       bool
-	SwitchToThemePicker  bool
-	SelectedProjectID    string
-	SelectedTaskID       string
+	WantsQuit           bool
+	SwitchToTaskDetail  bool
+	SwitchToEdit        bool
+	SwitchToReport      bool
+	SwitchToThemePicker bool
+	SelectedProjectID   string
+	SelectedTaskID      string
 }
 
 func NewTreeModel(store *model.Store, keys KeyMap) TreeModel {
@@ -191,6 +197,39 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			return m, nil
 		}
 
+		// ── Confirm-delete modal ───────────────────────────────────────────
+		if m.confirmActive {
+			switch msg.String() {
+			case "y":
+				if m.confirmTaskID != "" {
+					if m.store.ActiveTimer != nil && m.store.ActiveTimer.TaskID == m.confirmTaskID {
+						m.store.ActiveTimer = nil
+					}
+					m.store.DeleteTask(m.confirmProjID, m.confirmTaskID)
+				} else {
+					if m.store.ActiveTimer != nil && m.store.ActiveTimer.ProjectID == m.confirmProjID {
+						m.store.ActiveTimer = nil
+					}
+					delete(m.expanded, m.confirmProjID)
+					m.store.DeleteProject(m.confirmProjID)
+				}
+				_ = m.store.Save()
+				m.buildItems()
+				m.clampCursor()
+				m.scrollToCursor()
+				m.confirmActive = false
+				m.confirmMsg = ""
+				m.confirmProjID = ""
+				m.confirmTaskID = ""
+			case "n", "esc":
+				m.confirmActive = false
+				m.confirmMsg = ""
+				m.confirmProjID = ""
+				m.confirmTaskID = ""
+			}
+			return m, nil
+		}
+
 		// ── Input mode: route keys to text input ──────────────────────────
 		if m.mode != inputNone {
 			switch msg.Type {
@@ -310,23 +349,25 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			}
 			item := m.items[m.cursor]
 			if item.isProject {
-				if m.store.ActiveTimer != nil &&
-					m.store.ActiveTimer.ProjectID == item.projectID {
-					m.store.ActiveTimer = nil
+				p := m.store.FindProject(item.projectID)
+				name := item.name
+				if p != nil {
+					name = p.Name
 				}
-				delete(m.expanded, item.projectID)
-				m.store.DeleteProject(item.projectID)
+				m.confirmMsg = "Delete project \"" + name + "\"?"
+				m.confirmProjID = item.projectID
+				m.confirmTaskID = ""
 			} else {
-				if m.store.ActiveTimer != nil &&
-					m.store.ActiveTimer.TaskID == item.taskID {
-					m.store.ActiveTimer = nil
+				t := m.store.FindTask(item.projectID, item.taskID)
+				name := item.name
+				if t != nil {
+					name = t.Name
 				}
-				m.store.DeleteTask(item.projectID, item.taskID)
+				m.confirmMsg = "Delete task \"" + name + "\"?"
+				m.confirmProjID = item.projectID
+				m.confirmTaskID = item.taskID
 			}
-			_ = m.store.Save()
-			m.buildItems()
-			m.clampCursor()
-			m.scrollToCursor()
+			m.confirmActive = true
 
 		case "enter":
 			if len(m.items) == 0 {
@@ -563,10 +604,14 @@ func (m TreeModel) View() string {
 	}
 	sb.WriteString(m.help.View(km))
 
-	return StylePanel.
+	panel := StylePanel.
 		Width(innerW + 2).
 		Padding(0, 1).
 		Render(sb.String())
+	if m.confirmActive {
+		return renderConfirmOverlay(panel, m.confirmMsg, m.width, m.height)
+	}
+	return panel
 }
 
 func (m TreeModel) renderItem(i, innerW int) string {

@@ -67,7 +67,8 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Context-sensitive help bar** — bottom bar shows keys relevant to the current view and mode
 - [x] **Full help toggle** (`?`) — expands help bar to show all bindings
 - [x] **Catppuccin Mocha default** — colour palette initialised to Mocha at startup
-- [x] **Highlight bleed fix** — selected rows use `Width(w).MaxWidth(w)` to pin highlight to exactly one line regardless of terminal width
+- [x] **Highlight bleed fix** — selected rows manually pre-padded to content width so highlight never wraps onto a second line
+- [x] **Delete confirmation modal** — pressing `d` on any project, task, or session shows a centered overlay modal with the item name and `[y] confirm / [n] / [esc] cancel`; underlying view is dimmed; nothing deleted until `y` is pressed
 
 ---
 
