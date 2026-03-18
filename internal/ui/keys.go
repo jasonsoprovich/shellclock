@@ -58,7 +58,7 @@ func (k treeKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		k.km.Up, k.km.Down,
 		k.km.NewProject, k.km.NewTask,
-		k.km.Delete, k.km.Enter,
+		k.km.Enter, k.km.Delete,
 		k.km.Report, k.km.Quit, k.km.Help,
 	}
 }
@@ -67,8 +67,9 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.km.Up, k.km.Down, k.km.Left, k.km.Right},
 		{k.km.NewProject, k.km.NewTask, k.km.Delete},
-		{k.km.Enter, k.km.Edit, k.km.Report},
-		{k.km.ThemePicker, k.km.Quit, k.km.Help},
+		{k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker},
+		{k.km.Start, k.km.Pause, k.km.Stop, k.km.Reset},
+		{k.km.Quit, k.km.Help},
 	}
 }
 
@@ -158,6 +159,52 @@ func (k editFormKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{tab, shiftTab},
 		{k.km.Enter, k.km.Esc},
+	}
+}
+
+// ── Task detail (no active timer on this task) ────────────────────────────────
+
+type taskDetailKeyMap struct{ km KeyMap }
+
+func (k taskDetailKeyMap) ShortHelp() []key.Binding {
+	start := key.NewBinding(key.WithKeys("s", "enter"), key.WithHelp("s/enter", "start timer"))
+	add := key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "add session"))
+	edit := key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit session"))
+	del := key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete"))
+	return []key.Binding{k.km.Up, k.km.Down, start, add, edit, del, k.km.Esc, k.km.Help}
+}
+
+func (k taskDetailKeyMap) FullHelp() [][]key.Binding {
+	start := key.NewBinding(key.WithKeys("s", "enter"), key.WithHelp("s/enter", "start timer"))
+	add := key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "add session"))
+	edit := key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit session"))
+	del := key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete"))
+	return [][]key.Binding{
+		{k.km.Up, k.km.Down, start},
+		{add, edit, del},
+		{k.km.Esc, k.km.Help},
+	}
+}
+
+// ── Task detail (timer active on this task) ───────────────────────────────────
+
+type taskDetailActiveKeyMap struct{ km KeyMap }
+
+func (k taskDetailActiveKeyMap) ShortHelp() []key.Binding {
+	add := key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "add session"))
+	edit := key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit session"))
+	del := key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete"))
+	return []key.Binding{k.km.Up, k.km.Down, k.km.Pause, k.km.Stop, k.km.Reset, add, edit, del, k.km.Esc}
+}
+
+func (k taskDetailActiveKeyMap) FullHelp() [][]key.Binding {
+	add := key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "add session"))
+	edit := key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit session"))
+	del := key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete"))
+	return [][]key.Binding{
+		{k.km.Pause, k.km.Stop, k.km.Reset},
+		{k.km.Up, k.km.Down, add, edit, del},
+		{k.km.Esc, k.km.Help},
 	}
 }
 

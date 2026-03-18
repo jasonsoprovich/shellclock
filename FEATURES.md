@@ -19,18 +19,20 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Create task** (`n`) — inline text input prompt, added under focused project
 - [x] **Delete project or task** (`d`) — removes entry and all child data; clamps cursor
 - [x] **Time totals** — project and task totals shown inline in the tree
-- [x] **Active timer indicator** — `●` marker on the currently timed task
+- [x] **Live timer overview** — active task row shows `● 00:05:32` / `⏸ 00:05:32`; status line below title shows project › task + elapsed at all times
+- [x] **Timer controls from tree** — `s` start, `p` pause/resume, `S` stop & save, `r` reset without leaving the overview
+- [x] **Task detail navigation** — `enter` opens task detail; `e` opens dedicated session editor
 - [x] **Vim-style navigation** — `j`/`k` up/down, `h`/`l` collapse/expand
+- [x] **App-owned tick chain** — tick propagates correctly across all views; no double-ticking
 
-### Timer View
-- [x] **Live HH:MM:SS counter** — tick-based update every second
-- [x] **Pause / resume** (`p`) — accumulated time banked on pause; resumes from where it left off
-- [x] **Stop & save** (`S`) — commits session to task and clears active timer
-- [x] **Reset** (`r`) — discards accumulated time and restarts from now
-- [x] **Breadcrumb** — shows `Project › Task` for the active timer
-- [x] **Previous total** — shows task's historical total below the clock
-- [x] **Paused state styling** — clock and badge switch to yellow when paused
-- [x] **Background timer** — returning to tree with `q`/`esc` leaves timer running
+### Task Detail View
+- [x] **Opens on `enter`** — pressing enter on any task in the tree opens its detail view
+- [x] **Live timer display** — shows `● RUNNING HH:MM:SS` or `⏸ PAUSED HH:MM:SS` with wall-clock start time
+- [x] **Timer controls** — `s`/`enter` start, `p` pause/resume, `S` stop & save, `r` reset
+- [x] **Cross-task awareness** — shows which other task has the active timer if this task is not the active one
+- [x] **Session list** — full scrollable session list with start, end, duration columns
+- [x] **Inline session management** — `n` add, `e` edit, `d` delete sessions without leaving the view
+- [x] **Paused state styling** — timer badge and elapsed switch to yellow when paused
 
 ### Report View
 - [x] **Project and task rows** — hierarchical summary with totals

@@ -75,7 +75,7 @@ shellclock has four views, each accessible from the main tree.
 
 ### Tree View (main screen)
 
-The collapsible project/task list. This is the starting point for all other views.
+The collapsible project/task list. When a timer is running, the active task and elapsed time are shown below the title so you can monitor progress at a glance without leaving the overview.
 
 | Key | Action |
 |-----|--------|
@@ -86,32 +86,40 @@ The collapsible project/task list. This is the starting point for all other view
 | `N` | New project |
 | `n` | New task (under focused project) |
 | `d` | Delete focused project or task |
-| `enter` | Start timer on focused task |
+| `enter` | Open task detail view |
 | `e` | Open session editor for focused task |
+| `s` | Start timer on focused task (stays in tree) |
+| `p` | Pause / resume active timer |
+| `S` | Stop active timer and save session |
+| `r` | Reset active timer |
 | `R` | Open report view |
 | `T` | Open theme picker |
 | `q` | Quit |
 | `?` | Toggle full key list |
 
+The active task row in the tree always shows the live elapsed time (`● 00:05:32` or `⏸ 00:05:32` when paused).
+
 ---
 
-### Timer View
+### Task Detail View
 
-Live timer for the active task. The timer keeps running if you navigate away.
+Opens when you press `enter` on a task. Shows the live timer and full session list in one place.
 
 | Key | Action |
 |-----|--------|
-| `p` | Pause / resume |
-| `S` | Stop and save session |
-| `r` | Reset (discard accumulated time) |
-| `q` / `esc` | Return to tree (timer keeps running) |
+| `s` / `enter` | Start timer for this task |
+| `p` | Pause / resume timer |
+| `S` | Stop timer and save session |
+| `r` | Reset timer |
+| `↑` / `k` | Move up in session list |
+| `↓` / `j` | Move down in session list |
+| `n` | Add new session |
+| `e` | Edit selected session |
+| `d` | Delete selected session |
+| `q` / `esc` | Return to tree |
+| `?` | Toggle full key list |
 
-The timer display shows:
-- Current elapsed time (`HH:MM:SS`)
-- Running / Paused badge
-- Project › Task breadcrumb
-- Wall-clock start time
-- Previous total for the task (if any)
+The timer section shows `● RUNNING HH:MM:SS` or `⏸ PAUSED HH:MM:SS` and the wall-clock start time. If a timer is running on a different task, the view shows which task it belongs to instead.
 
 ---
 
@@ -207,11 +215,11 @@ shellclock/
 │   ├── model/
 │   │   └── model.go         # Data types and JSON persistence
 │   ├── ui/
-│   │   ├── app.go           # Root Bubble Tea model, view routing
-│   │   ├── tree.go          # Project/task tree view
-│   │   ├── timer.go         # Live timer view
+│   │   ├── app.go           # Root Bubble Tea model, view routing, tick chain
+│   │   ├── tree.go          # Project/task tree view (live timer overview)
+│   │   ├── taskdetail.go    # Task detail view (timer + session management)
 │   │   ├── report.go        # Summary report view
-│   │   ├── edit.go          # Session editor view
+│   │   ├── edit.go          # Dedicated session editor view
 │   │   ├── themepicker.go   # Theme selection view
 │   │   ├── themes.go        # Theme definitions and ApplyTheme()
 │   │   ├── styles.go        # Global style variables

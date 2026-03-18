@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/uuid"
 
 	"github.com/jasonsoprovich/shellclock/internal/model"
 	"github.com/jasonsoprovich/shellclock/internal/util"
@@ -51,13 +52,13 @@ type TreeModel struct {
 	showFull bool
 
 	// signals consumed by App
-	WantsQuit           bool
-	SwitchToTimer       bool
-	SwitchToEdit        bool
-	SwitchToReport      bool
-	SwitchToThemePicker bool
-	SelectedProjectID   string
-	SelectedTaskID      string
+	WantsQuit            bool
+	SwitchToTaskDetail   bool
+	SwitchToEdit         bool
+	SwitchToReport       bool
+	SwitchToThemePicker  bool
+	SelectedProjectID    string
+	SelectedTaskID       string
 }
 
 func NewTreeModel(store *model.Store, keys KeyMap) TreeModel {
@@ -323,17 +324,66 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			}
 			item := m.items[m.cursor]
 			if item.isProject {
-				// Toggle expand/collapse on projects.
 				m.expanded[item.projectID] = !m.expanded[item.projectID]
 				m.buildItems()
 				m.scrollToCursor()
 			} else {
-				m.startTimerForCursor()
+				m.SelectedProjectID = item.projectID
+				m.SelectedTaskID = item.taskID
+				m.SwitchToTaskDetail = true
 			}
 
 		case "s":
 			if len(m.items) > 0 && !m.items[m.cursor].isProject {
-				m.startTimerForCursor()
+				cmd = m.startTimerForCursor()
+			}
+
+		case "p":
+			at := m.store.ActiveTimer
+			if at != nil {
+				if at.Paused {
+					at.Start = time.Now()
+					at.Paused = false
+					_ = m.store.Save()
+					cmd = tick()
+				} else {
+					at.AccumulatedSeconds += int64(time.Since(at.Start).Seconds())
+					at.Paused = true
+					_ = m.store.Save()
+				}
+			}
+
+		case "S":
+			at := m.store.ActiveTimer
+			if at != nil {
+				now := time.Now()
+				elapsed := at.AccumulatedSeconds
+				if !at.Paused {
+					elapsed += int64(time.Since(at.Start).Seconds())
+				}
+				if elapsed > 0 {
+					m.store.AddSession(at.ProjectID, at.TaskID, model.Session{
+						ID:              uuid.NewString(),
+						Start:           at.OriginalStart,
+						End:             now,
+						DurationSeconds: elapsed,
+					})
+				}
+				m.store.ActiveTimer = nil
+				_ = m.store.Save()
+				m.buildItems()
+			}
+
+		case "r":
+			at := m.store.ActiveTimer
+			if at != nil {
+				now := time.Now()
+				at.AccumulatedSeconds = 0
+				at.OriginalStart = now
+				at.Start = now
+				at.Paused = false
+				_ = m.store.Save()
+				cmd = tick()
 			}
 
 		case "e":
@@ -366,24 +416,16 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m *TreeModel) startTimerForCursor() {
+// startTimerForCursor starts a timer on the focused task and returns a tick
+// cmd to begin the one-second update chain. Does nothing if a timer is already
+// running on any task (only one timer at a time).
+func (m *TreeModel) startTimerForCursor() tea.Cmd {
 	if len(m.items) == 0 {
-		return
+		return nil
 	}
 	item := m.items[m.cursor]
-	if item.isProject {
-		return
-	}
-	// If the running timer belongs to this exact task, navigate back to it
-	// without starting a new one.  If it belongs to a different task, do
-	// nothing — only one timer can run at a time.
-	if m.store.ActiveTimer != nil {
-		if m.store.ActiveTimer.TaskID == item.taskID {
-			m.SelectedProjectID = item.projectID
-			m.SelectedTaskID = item.taskID
-			m.SwitchToTimer = true
-		}
-		return
+	if item.isProject || m.store.ActiveTimer != nil {
+		return nil
 	}
 	now := time.Now()
 	m.store.ActiveTimer = &model.ActiveTimer{
@@ -393,9 +435,7 @@ func (m *TreeModel) startTimerForCursor() {
 		Start:         now,
 	}
 	_ = m.store.Save()
-	m.SelectedProjectID = item.projectID
-	m.SelectedTaskID = item.taskID
-	m.SwitchToTimer = true
+	return tick()
 }
 
 func (m TreeModel) View() string {
@@ -412,9 +452,38 @@ func (m TreeModel) View() string {
 
 	var sb strings.Builder
 
-	// ── Title ──────────────────────────────────────────────────────────────
+	// ── Title + active timer status (always 2 lines) ───────────────────────
 	sb.WriteString(StyleTitle.Render("shellclock"))
-	sb.WriteString("\n\n")
+	sb.WriteString("\n")
+	if m.store.ActiveTimer != nil {
+		at := m.store.ActiveTimer
+		elapsed := at.AccumulatedSeconds
+		if !at.Paused {
+			elapsed += int64(time.Since(at.Start).Seconds())
+		}
+		p := m.store.FindProject(at.ProjectID)
+		t := m.store.FindTask(at.ProjectID, at.TaskID)
+		pn, tn := "?", "?"
+		if p != nil {
+			pn = truncate(p.Name, 20)
+		}
+		if t != nil {
+			tn = truncate(t.Name, 20)
+		}
+		icon := "●"
+		if at.Paused {
+			icon = "⏸"
+		}
+		sb.WriteString(
+			StyleTimer.Render(icon+" ") +
+				StyleProject.Render(pn) +
+				StyleDimmed.Render(" › ") +
+				StyleTask.Render(tn) +
+				StyleDimmed.Render("  ") +
+				StyleDuration.Render(util.FormatDurationShort(elapsed)),
+		)
+	}
+	sb.WriteString("\n")
 
 	// ── Tree list ──────────────────────────────────────────────────────────
 	lh := m.listHeight()
@@ -497,7 +566,16 @@ func (m TreeModel) renderItem(i, innerW int) string {
 	nameText := "  · " + item.name
 	activeStr := ""
 	if m.store.ActiveTimer != nil && m.store.ActiveTimer.TaskID == item.taskID {
-		activeStr = " ●"
+		at := m.store.ActiveTimer
+		elapsed := at.AccumulatedSeconds
+		if !at.Paused {
+			elapsed += int64(time.Since(at.Start).Seconds())
+		}
+		if at.Paused {
+			activeStr = "  ⏸  " + util.FormatDurationShort(elapsed)
+		} else {
+			activeStr = "  ●  " + util.FormatDurationShort(elapsed)
+		}
 	}
 	durText := ""
 	if t != nil && t.TotalSeconds() > 0 {

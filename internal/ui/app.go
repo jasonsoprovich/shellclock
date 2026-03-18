@@ -13,7 +13,7 @@ type view int
 
 const (
 	viewTree view = iota
-	viewTimer
+	viewTaskDetail
 	viewReport
 	viewEdit
 	viewThemePicker
@@ -35,7 +35,7 @@ type App struct {
 	current view
 
 	tree   TreeModel
-	timer  TimerModel
+	detail TaskDetailModel
 	report ReportModel
 	edit   EditModel
 	picker ThemePickerModel
@@ -44,77 +44,82 @@ type App struct {
 	height int
 }
 
-// New creates an initialised App.  The stored theme (if any) is applied before
-// any sub-models are built so every style var is correct from the first render.
-// If a timer was running when the process last exited we open straight to the
-// timer view so the user sees the live elapsed time immediately.
+// New creates an initialised App. The stored theme is applied before any
+// sub-model is built so every style var is correct from the first render.
+// The app always opens on the tree view; the active timer (if any) is shown
+// inline there.
 func New(store *model.Store) App {
-	// Apply the persisted theme first so all Style vars are correct before any
-	// sub-model is constructed.
 	ApplyTheme(ThemeByName(store.Theme))
 
 	keys := DefaultKeyMap()
-	app := App{
-		store:  store,
-		keys:   keys,
-		tree:   NewTreeModel(store, keys),
-		timer:  NewTimerModel(store, keys),
-		report: NewReportModel(store, keys),
-		edit:   NewEditModel(store, keys),
-		picker: NewThemePickerModel(store, keys),
+	return App{
+		store:   store,
+		keys:    keys,
+		current: viewTree,
+		tree:    NewTreeModel(store, keys),
+		detail:  NewTaskDetailModel(store, keys),
+		report:  NewReportModel(store, keys),
+		edit:    NewEditModel(store, keys),
+		picker:  NewThemePickerModel(store, keys),
 	}
-	if store.ActiveTimer != nil {
-		app.current = viewTimer
-	} else {
-		app.current = viewTree
-	}
-	return app
 }
 
-// Init starts the appropriate sub-model.  When a timer is already running it
-// delegates to TimerModel.Init() which starts the one-second tick chain.
+// Init starts the tick chain if a timer is already running when the app
+// launches. The App owns the tick chain for all views.
 func (a App) Init() tea.Cmd {
-	if a.current == viewTimer {
-		return a.timer.Init()
+	if a.store.ActiveTimer != nil && !a.store.ActiveTimer.Paused {
+		return tick()
 	}
 	return nil
 }
 
 func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// ctrl+c always quits regardless of active view or input mode.
 	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "ctrl+c" {
 		return a, tea.Quit
 	}
 
-	// Forward window size to every sub-model so they size themselves correctly.
+	// Forward window size to every sub-model.
 	if ws, ok := msg.(tea.WindowSizeMsg); ok {
 		a.width = ws.Width
 		a.height = ws.Height
 		a.tree, _ = a.tree.Update(ws)
-		a.timer, _ = a.timer.Update(ws)
+		a.detail, _ = a.detail.Update(ws)
 		a.report, _ = a.report.Update(ws)
 		a.edit, _ = a.edit.Update(ws)
 		a.picker, _ = a.picker.Update(ws)
 		return a, nil
 	}
 
-	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
+	// Global tick chain: App continues it for every view whenever the timer
+	// is running. Sub-models only return tick() when they *start* or *resume*
+	// a timer — they never self-perpetuate the chain.
+	if _, isTick := msg.(tickMsg); isTick {
+		at := a.store.ActiveTimer
+		if at != nil && !at.Paused {
+			cmds = append(cmds, tick())
+		}
+	}
 
 	switch a.current {
-	// ── Tree ───────────────────────────────────────────────────────────────
+	// ── Tree ─────────────────────────────────────────────────────────────────
 	case viewTree:
-		a.tree, cmd = a.tree.Update(msg)
+		var c tea.Cmd
+		a.tree, c = a.tree.Update(msg)
+		cmds = append(cmds, c)
 
 		if a.tree.WantsQuit {
 			return a, tea.Quit
 		}
-		if a.tree.SwitchToTimer {
-			a.tree.SwitchToTimer = false
-			a.timer = NewTimerModel(a.store, a.keys)
-			a.timer.width = a.width
-			a.timer.height = a.height
-			a.current = viewTimer
-			return a, tea.Batch(cmd, a.timer.Init())
+		if a.tree.SwitchToTaskDetail {
+			a.tree.SwitchToTaskDetail = false
+			a.detail = NewTaskDetailModel(a.store, a.keys)
+			a.detail.ProjectID = a.tree.SelectedProjectID
+			a.detail.TaskID = a.tree.SelectedTaskID
+			a.detail.width = a.width
+			a.detail.height = a.height
+			a.current = viewTaskDetail
 		}
 		if a.tree.SwitchToEdit {
 			a.tree.SwitchToEdit = false
@@ -124,7 +129,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.edit.width = a.width
 			a.edit.height = a.height
 			a.current = viewEdit
-			return a, cmd
 		}
 		if a.tree.SwitchToReport {
 			a.tree.SwitchToReport = false
@@ -132,7 +136,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.report.width = a.width
 			a.report.height = a.height
 			a.current = viewReport
-			return a, cmd
 		}
 		if a.tree.SwitchToThemePicker {
 			a.tree.SwitchToThemePicker = false
@@ -140,51 +143,62 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.picker.width = a.width
 			a.picker.height = a.height
 			a.current = viewThemePicker
-			return a, cmd
 		}
 
-	// ── Timer ──────────────────────────────────────────────────────────────
-	case viewTimer:
-		a.timer, cmd = a.timer.Update(msg)
-		if a.timer.SwitchToTree {
-			a.timer.SwitchToTree = false
-			a.tree.buildItems() // refresh totals/indicator
+	// ── Task detail ───────────────────────────────────────────────────────────
+	case viewTaskDetail:
+		var c tea.Cmd
+		a.detail, c = a.detail.Update(msg)
+		cmds = append(cmds, c)
+
+		if a.detail.SwitchToTree {
+			a.detail.SwitchToTree = false
+			a.tree.buildItems()
 			a.current = viewTree
 		}
 
-	// ── Report ─────────────────────────────────────────────────────────────
+	// ── Report ────────────────────────────────────────────────────────────────
 	case viewReport:
-		a.report, cmd = a.report.Update(msg)
+		var c tea.Cmd
+		a.report, c = a.report.Update(msg)
+		cmds = append(cmds, c)
+
 		if a.report.SwitchToTree {
 			a.report.SwitchToTree = false
 			a.current = viewTree
 		}
 
-	// ── Edit ───────────────────────────────────────────────────────────────
+	// ── Edit ──────────────────────────────────────────────────────────────────
 	case viewEdit:
-		a.edit, cmd = a.edit.Update(msg)
+		var c tea.Cmd
+		a.edit, c = a.edit.Update(msg)
+		cmds = append(cmds, c)
+
 		if a.edit.SwitchToTree {
 			a.edit.SwitchToTree = false
-			a.tree.buildItems() // refresh session totals
+			a.tree.buildItems()
 			a.current = viewTree
 		}
 
-	// ── Theme picker ────────────────────────────────────────────────────────
+	// ── Theme picker ──────────────────────────────────────────────────────────
 	case viewThemePicker:
-		a.picker, cmd = a.picker.Update(msg)
+		var c tea.Cmd
+		a.picker, c = a.picker.Update(msg)
+		cmds = append(cmds, c)
+
 		if a.picker.SwitchToTree {
 			a.picker.SwitchToTree = false
 			a.current = viewTree
 		}
 	}
 
-	return a, cmd
+	return a, tea.Batch(cmds...)
 }
 
 func (a App) View() string {
 	switch a.current {
-	case viewTimer:
-		return a.timer.View()
+	case viewTaskDetail:
+		return a.detail.View()
 	case viewReport:
 		return a.report.View()
 	case viewEdit:
