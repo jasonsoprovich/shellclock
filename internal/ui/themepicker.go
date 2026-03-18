@@ -80,8 +80,8 @@ func (m ThemePickerModel) Update(msg tea.Msg) (ThemePickerModel, tea.Cmd) {
 // ── View ─────────────────────────────────────────────────────────────────────
 
 // labelWidth is the display width of the longest theme label, used for column
-// alignment.  "Catppuccin Mocha" / "Catppuccin Latte" = 16 chars.
-const labelWidth = 16
+// alignment.  "Catppuccin Macchiato" = 20 chars.
+const labelWidth = 20
 
 // swatchColors returns the seven representative colors shown as ■ squares.
 func swatchColors(t Theme) []lipgloss.Color {
