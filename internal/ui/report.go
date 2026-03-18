@@ -150,12 +150,13 @@ func (m ReportModel) View() string {
 	}
 
 	// Column widths.
-	//   durW  = 11  (right-aligned duration, e.g. "1h 23m 45s")
-	//   barW  = 20  (progress bar)
-	//   gap   = 2   (space between bar and duration)
-	//   nameW = remainder
-	const durW, barW, gap = 11, 20, 2
-	nameW := innerW - barW - gap - durW
+	//   durW     = 11  (right-aligned duration, e.g. "1h 23m 45s")
+	//   barW     = 20  (progress bar)
+	//   nameGap  = 2   (space between name and bar)
+	//   barGap   = 1   (space between bar and duration)
+	//   nameW    = remainder
+	const durW, barW, nameGap, barGap = 11, 20, 2, 1
+	nameW := innerW - barW - nameGap - barGap - durW
 	if nameW < 10 {
 		nameW = 10
 	}
@@ -252,7 +253,7 @@ func (m ReportModel) View() string {
 				barCol := renderBar(secs, grandTotal, barW)
 				durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
 					Render(StyleDuration.Render(util.FormatDuration(secs)))
-				body.WriteString(nameCol + strings.Repeat(" ", gap) + barCol + " " + durCol)
+				body.WriteString(nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + durCol)
 				body.WriteString("\n")
 
 			case reportRowTask:
@@ -269,7 +270,7 @@ func (m ReportModel) View() string {
 				barCol := renderBar(secs, p.TotalSeconds(), barW)
 				durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
 					Render(StyleDuration.Render(util.FormatDuration(secs)))
-				body.WriteString(nameCol + strings.Repeat(" ", gap) + barCol + " " + durCol)
+				body.WriteString(nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + durCol)
 				body.WriteString("\n")
 			}
 		}

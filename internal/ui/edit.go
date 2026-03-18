@@ -219,14 +219,16 @@ func (m *EditModel) closeForm() {
 	m.scrollToCursor()
 }
 
-// openAdd starts the add-session form and returns the Focus tea.Cmd so the
-// cursor blink animation starts immediately.
+// openAdd starts the add-session form pre-filled with the current time so the
+// user can navigate with arrow keys and adjust rather than typing from scratch.
 func (m *EditModel) openAdd() tea.Cmd {
+	now := time.Now().Truncate(time.Second)
 	m.inputMode = editModeAdd
 	m.errMsg = ""
 	m.activeField = fieldStart
-	m.startInput.SetValue("")
-	m.endInput.SetValue("")
+	m.startInput.SetValue(now.Format(timeFmt))
+	m.endInput.SetValue(now.Format(timeFmt))
+	m.startInput.CursorEnd()
 	return m.startInput.Focus()
 }
 
@@ -243,6 +245,7 @@ func (m *EditModel) openEdit(sess model.Session) tea.Cmd {
 		endVal = sess.End.Format(timeFmt)
 	}
 	m.endInput.SetValue(endVal)
+	m.startInput.CursorEnd()
 	return m.startInput.Focus()
 }
 

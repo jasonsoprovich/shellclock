@@ -517,22 +517,18 @@ func (m TreeModel) renderItem(i, innerW int) string {
 	return line
 }
 
-// highlightRow renders text using the selection style padded to exactly w
-// visible columns.  Explicit padding is used instead of lipgloss Width() so
-// that the content is never word-wrapped — Width() pads but does not clip, and
-// any overflow onto a second line would carry the background colour, producing
-// the "highlight bleed" artifact.
+// highlightRow renders text using the selection style pinned to exactly w
+// visible columns.  Width(w) pads short text; MaxWidth(w) clips long text.
+// Together they guarantee a single-line highlight that never bleeds onto the
+// next row regardless of terminal width.
 func highlightRow(text string, w int) string {
-	vis := lipgloss.Width(text)
-	switch {
-	case vis < w:
-		text += strings.Repeat(" ", w-vis)
-	case vis > w:
+	// Clip first so lipgloss never has to word-wrap.
+	if lipgloss.Width(text) > w {
 		runes := []rune(text)
 		for len(runes) > 0 && lipgloss.Width(string(runes)) > w-1 {
 			runes = runes[:len(runes)-1]
 		}
 		text = string(runes) + "…"
 	}
-	return StyleSelected.Render(text)
+	return StyleSelected.Width(w).MaxWidth(w).Render(text)
 }
