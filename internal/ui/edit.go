@@ -15,7 +15,7 @@ import (
 	"github.com/jasonsoprovich/shellclock/internal/util"
 )
 
-const timeFmt = "2006-01-02 15:04"
+const timeFmt = "2006-01-02 15:04:05"
 
 // editInputMode controls what the two text inputs are collecting.
 type editInputMode int
@@ -35,13 +35,13 @@ const (
 )
 
 // Session list column visible widths.
-// Layout: [colIdx][colStart][colEnd][colDur] = 3+18+18+11 = 50
+// Layout: [colIdx][colStart][colEnd][colDur] = 3+21+21+11 = 56
 // The start and end columns include a 2-char trailing gap so adjacent
 // columns read as separated without an explicit separator character.
 const (
 	colIdx   = 3
-	colStart = 18 // 16 content + 2 trailing gap
-	colEnd   = 18 // 16 content + 2 trailing gap
+	colStart = 21 // 19 content + 2 trailing gap
+	colEnd   = 21 // 19 content + 2 trailing gap
 	colDur   = 11 // right-aligned duration
 )
 
@@ -71,15 +71,15 @@ type EditModel struct {
 
 func NewEditModel(store *model.Store, keys KeyMap) EditModel {
 	si := textinput.New()
-	si.CharLimit = 16
-	si.Placeholder = "2006-01-02 15:04"
+	si.CharLimit = 19
+	si.Placeholder = "2006-01-02 15:04:05"
 	si.PlaceholderStyle = StyleDimmed
 	si.PromptStyle = StyleInputLabel
 	si.TextStyle = StyleTask
 
 	ei := textinput.New()
-	ei.CharLimit = 16
-	ei.Placeholder = "2006-01-02 15:04"
+	ei.CharLimit = 19
+	ei.Placeholder = "2006-01-02 15:04:05"
 	ei.PlaceholderStyle = StyleDimmed
 	ei.PromptStyle = StyleInputLabel
 	ei.TextStyle = StyleTask
@@ -172,12 +172,12 @@ func (m *EditModel) commitForm() {
 
 	start, err := time.ParseInLocation(timeFmt, startStr, time.Local)
 	if err != nil {
-		m.errMsg = "invalid start — use 2006-01-02 15:04"
+		m.errMsg = "invalid start — use 2006-01-02 15:04:05"
 		return
 	}
 	end, err := time.ParseInLocation(timeFmt, endStr, time.Local)
 	if err != nil {
-		m.errMsg = "invalid end — use 2006-01-02 15:04"
+		m.errMsg = "invalid end — use 2006-01-02 15:04:05"
 		return
 	}
 	if !end.After(start) {
@@ -357,8 +357,8 @@ func (m EditModel) View() string {
 		w = 80
 	}
 	innerW := w - 4
-	if innerW < 30 {
-		innerW = 30
+	if innerW < 58 {
+		innerW = 58
 	}
 
 	// ── Header ─────────────────────────────────────────────────────────────
