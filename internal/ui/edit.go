@@ -85,7 +85,7 @@ func NewEditModel(store *model.Store, keys KeyMap) EditModel {
 	ei.TextStyle = StyleTask
 
 	h := help.New()
-	h.Styles = catppuccinHelpStyles()
+	h.Styles = helpStyles()
 
 	return EditModel{
 		store:      store,
@@ -498,6 +498,7 @@ func (m EditModel) View() string {
 
 	// ── Help bar ─────────────────────────────────────────────────────────────
 	sb.WriteString("\n")
+	m.help.Styles = helpStyles()
 	m.help.Width = innerW
 	var km help.KeyMap
 	if m.inputMode != editModeNone {

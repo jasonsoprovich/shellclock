@@ -48,7 +48,7 @@ type ReportModel struct {
 
 func NewReportModel(store *model.Store, keys KeyMap) ReportModel {
 	h := help.New()
-	h.Styles = catppuccinHelpStyles()
+	h.Styles = helpStyles()
 	m := ReportModel{store: store, keys: keys, help: h}
 	m.buildRows()
 	return m
@@ -298,6 +298,7 @@ func (m ReportModel) View() string {
 	}
 
 	// ── Help bar ──────────────────────────────────────────────────────────
+	m.help.Styles = helpStyles()
 	m.help.Width = innerW
 	helpStr := m.help.View(reportKeyMap{m.keys})
 

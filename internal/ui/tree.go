@@ -51,12 +51,13 @@ type TreeModel struct {
 	showFull bool
 
 	// signals consumed by App
-	WantsQuit         bool
-	SwitchToTimer     bool
-	SwitchToEdit      bool
-	SwitchToReport    bool
-	SelectedProjectID string
-	SelectedTaskID    string
+	WantsQuit           bool
+	SwitchToTimer       bool
+	SwitchToEdit        bool
+	SwitchToReport      bool
+	SwitchToThemePicker bool
+	SelectedProjectID   string
+	SelectedTaskID      string
 }
 
 func NewTreeModel(store *model.Store, keys KeyMap) TreeModel {
@@ -68,7 +69,7 @@ func NewTreeModel(store *model.Store, keys KeyMap) TreeModel {
 	ti.PlaceholderStyle = StyleDimmed
 
 	h := help.New()
-	h.Styles = catppuccinHelpStyles()
+	h.Styles = helpStyles()
 
 	m := TreeModel{
 		store:     store,
@@ -349,6 +350,9 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 		case "R":
 			m.SwitchToReport = true
 
+		case "T":
+			m.SwitchToThemePicker = true
+
 		case "?":
 			m.showFull = !m.showFull
 			m.help.ShowAll = m.showFull
@@ -451,6 +455,7 @@ func (m TreeModel) View() string {
 
 	// ── Help bar ───────────────────────────────────────────────────────────
 	sb.WriteString("\n")
+	m.help.Styles = helpStyles()
 	m.help.Width = innerW
 	var km help.KeyMap
 	if m.mode != inputNone {

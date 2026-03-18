@@ -26,7 +26,7 @@ type TimerModel struct {
 
 func NewTimerModel(store *model.Store, keys KeyMap) TimerModel {
 	h := help.New()
-	h.Styles = catppuccinHelpStyles()
+	h.Styles = helpStyles()
 	return TimerModel{store: store, keys: keys, help: h}
 }
 
@@ -217,6 +217,7 @@ func (m TimerModel) View() string {
 	}
 
 	// Help bar.
+	m.help.Styles = helpStyles()
 	m.help.Width = innerW
 	helpStr := m.help.View(timerKeyMap{m.keys})
 

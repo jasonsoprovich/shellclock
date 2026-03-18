@@ -65,6 +65,7 @@ type ActiveTimer struct {
 type Store struct {
 	Projects    []Project    `json:"projects"`
 	ActiveTimer *ActiveTimer `json:"active_timer,omitempty"`
+	Theme       string       `json:"theme,omitempty"` // theme name; empty → default
 
 	path string
 }

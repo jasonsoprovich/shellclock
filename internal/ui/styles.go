@@ -5,8 +5,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Catppuccin Mocha palette
-const (
+// Current palette — mutable so ApplyTheme can update them at runtime.
+// Initialised to Catppuccin Mocha values.
+var (
 	colorBase    = lipgloss.Color("#1e1e2e")
 	colorSurface = lipgloss.Color("#313244")
 	colorOverlay = lipgloss.Color("#45475a")
@@ -21,6 +22,8 @@ const (
 	colorTeal    = lipgloss.Color("#94e2d5")
 )
 
+// Named styles — rebuilt by ApplyTheme when the theme changes.
+// Initialised to Catppuccin Mocha at package load.
 var (
 	StylePanel = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -60,18 +63,17 @@ var (
 			Bold(true)
 )
 
-// catppuccinHelpStyles returns help.Styles using the Mocha palette.
-func catppuccinHelpStyles() help.Styles {
-	keyStyle  := lipgloss.NewStyle().Foreground(colorBlue)
-	descStyle := lipgloss.NewStyle().Foreground(colorSubtext)
-	sepStyle  := lipgloss.NewStyle().Foreground(colorOverlay)
+// helpStyles returns help.Styles built from the current palette variables.
+// Called inside every View() so theme changes take effect on the next render
+// without needing to store styles in the model.
+func helpStyles() help.Styles {
 	return help.Styles{
-		ShortKey:       keyStyle,
-		ShortDesc:      descStyle,
-		ShortSeparator: sepStyle,
-		Ellipsis:       descStyle,
-		FullKey:        keyStyle,
-		FullDesc:       descStyle,
-		FullSeparator:  sepStyle,
+		ShortKey:       lipgloss.NewStyle().Foreground(colorBlue),
+		ShortDesc:      lipgloss.NewStyle().Foreground(colorSubtext),
+		ShortSeparator: lipgloss.NewStyle().Foreground(colorOverlay),
+		Ellipsis:       lipgloss.NewStyle().Foreground(colorSubtext),
+		FullKey:        lipgloss.NewStyle().Foreground(colorBlue),
+		FullDesc:       lipgloss.NewStyle().Foreground(colorSubtext),
+		FullSeparator:  lipgloss.NewStyle().Foreground(colorOverlay),
 	}
 }

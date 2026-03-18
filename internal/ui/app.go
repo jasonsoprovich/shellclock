@@ -16,6 +16,7 @@ const (
 	viewTimer
 	viewReport
 	viewEdit
+	viewThemePicker
 )
 
 // tickMsg is sent every second to drive the live timer display.
@@ -37,15 +38,21 @@ type App struct {
 	timer  TimerModel
 	report ReportModel
 	edit   EditModel
+	picker ThemePickerModel
 
 	width  int
 	height int
 }
 
-// New creates an initialised App.  If a timer was running when the process
-// last exited it is already persisted in the store, so we open straight to the
+// New creates an initialised App.  The stored theme (if any) is applied before
+// any sub-models are built so every style var is correct from the first render.
+// If a timer was running when the process last exited we open straight to the
 // timer view so the user sees the live elapsed time immediately.
 func New(store *model.Store) App {
+	// Apply the persisted theme first so all Style vars are correct before any
+	// sub-model is constructed.
+	ApplyTheme(ThemeByName(store.Theme))
+
 	keys := DefaultKeyMap()
 	app := App{
 		store:  store,
@@ -54,6 +61,7 @@ func New(store *model.Store) App {
 		timer:  NewTimerModel(store, keys),
 		report: NewReportModel(store, keys),
 		edit:   NewEditModel(store, keys),
+		picker: NewThemePickerModel(store, keys),
 	}
 	if store.ActiveTimer != nil {
 		app.current = viewTimer
@@ -86,6 +94,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.timer, _ = a.timer.Update(ws)
 		a.report, _ = a.report.Update(ws)
 		a.edit, _ = a.edit.Update(ws)
+		a.picker, _ = a.picker.Update(ws)
 		return a, nil
 	}
 
@@ -125,6 +134,14 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.current = viewReport
 			return a, cmd
 		}
+		if a.tree.SwitchToThemePicker {
+			a.tree.SwitchToThemePicker = false
+			a.picker = NewThemePickerModel(a.store, a.keys)
+			a.picker.width = a.width
+			a.picker.height = a.height
+			a.current = viewThemePicker
+			return a, cmd
+		}
 
 	// ── Timer ──────────────────────────────────────────────────────────────
 	case viewTimer:
@@ -151,6 +168,14 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.tree.buildItems() // refresh session totals
 			a.current = viewTree
 		}
+
+	// ── Theme picker ────────────────────────────────────────────────────────
+	case viewThemePicker:
+		a.picker, cmd = a.picker.Update(msg)
+		if a.picker.SwitchToTree {
+			a.picker.SwitchToTree = false
+			a.current = viewTree
+		}
 	}
 
 	return a, cmd
@@ -164,6 +189,8 @@ func (a App) View() string {
 		return a.report.View()
 	case viewEdit:
 		return a.edit.View()
+	case viewThemePicker:
+		return a.picker.View()
 	default:
 		return a.tree.View()
 	}
