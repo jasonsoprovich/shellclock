@@ -325,17 +325,19 @@ func (m TaskDetailModel) Update(msg tea.Msg) (TaskDetailModel, tea.Cmd) {
 			}
 
 		case "s", "enter":
-			cmd = m.startTimer()
-
-		case "p":
 			at := m.store.ActiveTimer
-			if at != nil && at.TaskID == m.TaskID {
+			if at == nil {
+				// Start.
+				cmd = m.startTimer()
+			} else if at.TaskID == m.TaskID {
 				if at.Paused {
+					// Resume.
 					at.Start = time.Now()
 					at.Paused = false
 					_ = m.store.Save()
 					cmd = tick()
 				} else {
+					// Pause.
 					at.AccumulatedSeconds += int64(time.Since(at.Start).Seconds())
 					at.Paused = true
 					_ = m.store.Save()

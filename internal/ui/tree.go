@@ -344,23 +344,23 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			}
 
 		case "s":
-			if len(m.items) > 0 && !m.items[m.cursor].isProject {
-				cmd = m.startTimerForCursor()
-			}
-
-		case "p":
 			at := m.store.ActiveTimer
-			if at != nil {
-				if at.Paused {
-					at.Start = time.Now()
-					at.Paused = false
-					_ = m.store.Save()
-					cmd = tick()
-				} else {
-					at.AccumulatedSeconds += int64(time.Since(at.Start).Seconds())
-					at.Paused = true
-					_ = m.store.Save()
+			if at == nil {
+				// Start timer for the focused task.
+				if len(m.items) > 0 && !m.items[m.cursor].isProject {
+					cmd = m.startTimerForCursor()
 				}
+			} else if at.Paused {
+				// Resume.
+				at.Start = time.Now()
+				at.Paused = false
+				_ = m.store.Save()
+				cmd = tick()
+			} else {
+				// Pause.
+				at.AccumulatedSeconds += int64(time.Since(at.Start).Seconds())
+				at.Paused = true
+				_ = m.store.Save()
 			}
 
 		case "S":
@@ -435,7 +435,7 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 		}
 	}
 
-	return m, nil
+	return m, cmd
 }
 
 // startTimerForCursor starts a timer on the focused task and returns a tick
@@ -492,17 +492,19 @@ func (m TreeModel) View() string {
 		if t != nil {
 			tn = truncate(t.Name, 20)
 		}
-		icon := "●"
+		pauseStyle := lipgloss.NewStyle().Foreground(colorYellow).Bold(true)
+		var badge string
 		if at.Paused {
-			icon = "⏸"
+			badge = pauseStyle.Render("⏸  PAUSED  " + util.FormatDurationShort(elapsed))
+		} else {
+			badge = StyleTimer.Render("●  RUNNING  " + util.FormatDurationShort(elapsed))
 		}
 		sb.WriteString(
-			StyleTimer.Render(icon+" ") +
+			badge +
+				StyleDimmed.Render("  ") +
 				StyleProject.Render(pn) +
 				StyleDimmed.Render(" › ") +
-				StyleTask.Render(tn) +
-				StyleDimmed.Render("  ") +
-				StyleDuration.Render(util.FormatDurationShort(elapsed)),
+				StyleTask.Render(tn),
 		)
 	}
 	sb.WriteString("\n")
@@ -623,17 +625,20 @@ func (m TreeModel) renderItem(i, innerW int) string {
 }
 
 // highlightRow renders text using the selection style pinned to exactly w
-// visible columns.  Width(w) pads short text; MaxWidth(w) clips long text.
-// Together they guarantee a single-line highlight that never bleeds onto the
-// next row regardless of terminal width.
+// visible columns. Text is manually padded/clipped to w chars first so
+// lipgloss never word-wraps at spaces inside the styled element.
 func highlightRow(text string, w int) string {
-	// Clip first so lipgloss never has to word-wrap.
-	if lipgloss.Width(text) > w {
+	vis := lipgloss.Width(text)
+	if vis > w {
 		runes := []rune(text)
 		for len(runes) > 0 && lipgloss.Width(string(runes)) > w-1 {
 			runes = runes[:len(runes)-1]
 		}
 		text = string(runes) + "…"
+		vis = w
 	}
-	return StyleSelected.Width(w).MaxWidth(w).Render(text)
+	if vis < w {
+		text += strings.Repeat(" ", w-vis)
+	}
+	return StyleSelected.Render(text)
 }

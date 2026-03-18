@@ -89,8 +89,7 @@ The collapsible project/task list. When a timer is running, the active task and 
 | `d` | Delete focused project or task |
 | `enter` | Open task detail view |
 | `e` | Open session editor for focused task |
-| `s` | Start timer on focused task (stays in tree) |
-| `p` | Pause / resume active timer |
+| `s` | Start / pause / resume active timer |
 | `S` | Stop active timer and save session |
 | `r` | Reset active timer |
 | `R` | Open report view |
@@ -108,8 +107,7 @@ Opens when you press `enter` on a task. Shows the live timer and full session li
 
 | Key | Action |
 |-----|--------|
-| `s` / `enter` | Start timer for this task |
-| `p` | Pause / resume timer |
+| `s` / `enter` | Start / pause / resume timer |
 | `S` | Stop timer and save session |
 | `r` | Reset timer |
 | `↑` / `k` | Move up in session list |

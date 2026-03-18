@@ -18,7 +18,6 @@ type KeyMap struct {
 	Edit         key.Binding
 	Rename       key.Binding
 	Start        key.Binding
-	Pause        key.Binding
 	Stop         key.Binding
 	Reset        key.Binding
 	Report       key.Binding
@@ -41,8 +40,7 @@ func DefaultKeyMap() KeyMap {
 		Delete:      key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
 		Edit:        key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit sessions")),
 		Rename:      key.NewBinding(key.WithKeys("E"), key.WithHelp("E", "rename")),
-		Start:       key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "start timer")),
-		Pause:       key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "pause/resume")),
+		Start:       key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "start/pause/resume")),
 		Stop:        key.NewBinding(key.WithKeys("S"), key.WithHelp("S", "stop & save")),
 		Reset:       key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reset")),
 		Report:      key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "report")),
@@ -70,23 +68,8 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 		{k.km.Up, k.km.Down, k.km.Left, k.km.Right},
 		{k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete},
 		{k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker},
-		{k.km.Start, k.km.Pause, k.km.Stop, k.km.Reset},
+		{k.km.Start, k.km.Stop, k.km.Reset},
 		{k.km.Quit, k.km.Help},
-	}
-}
-
-// ── Timer ────────────────────────────────────────────────────────────────────
-
-type timerKeyMap struct{ km KeyMap }
-
-func (k timerKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.km.Pause, k.km.Stop, k.km.Reset, k.km.Esc}
-}
-
-func (k timerKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.km.Pause, k.km.Stop},
-		{k.km.Reset, k.km.Esc},
 	}
 }
 
@@ -196,7 +179,7 @@ func (k taskDetailActiveKeyMap) ShortHelp() []key.Binding {
 	add := key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "add session"))
 	edit := key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit session"))
 	del := key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete"))
-	return []key.Binding{k.km.Up, k.km.Down, k.km.Pause, k.km.Stop, k.km.Reset, add, edit, del, k.km.Esc}
+	return []key.Binding{k.km.Up, k.km.Down, k.km.Start, k.km.Stop, k.km.Reset, add, edit, del, k.km.Esc}
 }
 
 func (k taskDetailActiveKeyMap) FullHelp() [][]key.Binding {
@@ -204,7 +187,7 @@ func (k taskDetailActiveKeyMap) FullHelp() [][]key.Binding {
 	edit := key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit session"))
 	del := key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete"))
 	return [][]key.Binding{
-		{k.km.Pause, k.km.Stop, k.km.Reset},
+		{k.km.Start, k.km.Stop, k.km.Reset},
 		{k.km.Up, k.km.Down, add, edit, del},
 		{k.km.Esc, k.km.Help},
 	}
