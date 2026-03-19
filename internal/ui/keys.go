@@ -74,7 +74,10 @@ func DefaultKeyMap() KeyMap {
 
 // ── Tree ────────────────────────────────────────────────────────────────────
 
-type treeKeyMap struct{ km KeyMap }
+type treeKeyMap struct {
+	km    KeyMap
+	width int
+}
 
 func (k treeKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
@@ -85,14 +88,37 @@ func (k treeKeyMap) ShortHelp() []key.Binding {
 	}
 }
 
+// FullHelp distributes all tree keybindings into columns sized to fit the
+// terminal width. Each column is ~24 chars wide (longest entry + separator).
 func (k treeKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.km.Up, k.km.Down, k.km.Left, k.km.Right},
-		{k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete},
-		{k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker},
-		{k.km.TreeTimer, k.km.Stop, k.km.Reset, k.km.EditTags},
-		{k.km.Rate, k.km.Summary, k.km.BackupInfo, k.km.IdleWarn, k.km.MasterReset, k.km.HelpScreen, k.km.Quit, k.km.Help},
+	all := []key.Binding{
+		k.km.Up, k.km.Down, k.km.Left, k.km.Right,
+		k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete,
+		k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker,
+		k.km.TreeTimer, k.km.Stop, k.km.Reset, k.km.EditTags,
+		k.km.Rate, k.km.Summary, k.km.BackupInfo, k.km.IdleWarn,
+		k.km.MasterReset, k.km.HelpScreen, k.km.Quit, k.km.Help,
 	}
+
+	const colWidth = 24 // estimated chars per column including separator
+	numCols := k.width / colWidth
+	if numCols < 4 {
+		numCols = 4
+	}
+	if numCols > len(all) {
+		numCols = len(all)
+	}
+
+	rowsPerCol := (len(all) + numCols - 1) / numCols
+	var cols [][]key.Binding
+	for i := 0; i < len(all); i += rowsPerCol {
+		end := i + rowsPerCol
+		if end > len(all) {
+			end = len(all)
+		}
+		cols = append(cols, all[i:end])
+	}
+	return cols
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────

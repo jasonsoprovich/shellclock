@@ -259,8 +259,6 @@ func (m *HelpModel) buildLines() {
 	blank()
 	add(row("↑ / k", "Scroll up"))
 	add(row("↓ / j", "Scroll down"))
-	add(row("↑ / k", "Scroll up"))
-	add(row("↓ / j", "Scroll down"))
 	add(row("f", "Open tag filter (show only projects with a selected tag)"))
 	add(row("$", "Toggle earnings column (shows $rate×hours per project)"))
 	add(row("x", "Export report — choose CSV or plain text"))

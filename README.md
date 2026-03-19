@@ -11,7 +11,12 @@ Built with the [Charm](https://charm.sh) stack: Bubble Tea, Lip Gloss, and Bubbl
 - **Projects & Tasks** — hierarchical tree: projects contain tasks, tasks accumulate sessions
 - **Live Timer** — start, pause, resume, reset, and stop a timer on any task; timer persists across restarts
 - **Session Editor** — view all recorded sessions for a task; add, edit, or delete individual sessions with second-level precision
+- **Summary View** — quick daily or weekly breakdown of sessions, grouped by project and task
 - **Report View** — visual summary with progress bars showing time distribution across all projects and tasks
+- **Project Tags** — tag projects with arbitrary labels; filter the report to a specific tag
+- **Hourly Rate & Earnings** — set a rate per project; toggle an earnings column in the report
+- **Idle Timer Warning** — flashing badge when a timer has been running past a configurable threshold
+- **Automatic Backups** — daily backup on every launch; last 7 kept; browse and restore from within the app
 - **Theme System** — 31 built-in themes (Catppuccin family, Dracula, Nord, Tokyo Night, Gruvbox, Rosé Pine, and more); live preview in the picker; selection persists across launches
 - **In-app Help** — press `H` from anywhere to open a full scrollable reference covering every key, view, and CLI command
 - **Toggl Import** — import a Toggl Detailed CSV export from the command line without opening the TUI
@@ -104,7 +109,7 @@ Sessions are always appended — existing projects and tasks are matched by name
 
 ### Views
 
-shellclock has five views, each accessible from the main tree. Press `H` from any view to open the full in-app help reference.
+shellclock has several views, each accessible from the main tree. Press `H` from any view to open the full in-app help reference.
 
 ---
 
@@ -122,14 +127,19 @@ The collapsible project/task list. When a timer is running, the active task and 
 | `n` | New task (under focused project) |
 | `E` | Rename focused project or task |
 | `d` | Delete focused project or task |
+| `#` | Edit tags for focused project |
 | `enter` | Open task detail view |
 | `e` | Open session editor for focused task |
-| `s` | Start / pause / resume active timer |
+| `p` | Start / pause / resume active timer |
 | `S` | Stop active timer and save session |
 | `r` | Reset active timer |
+| `s` | Open summary view (today's sessions) |
 | `R` | Open report view |
 | `T` | Open theme picker |
+| `$` | Set hourly rate for focused project |
 | `B` | Show backup info |
+| `W` | Idle warn settings |
+| `X` | System reset (requires typing CONFIRM) |
 | `H` | Open help screen |
 | `q` | Quit |
 | `?` | Toggle compact key reference bar |
@@ -159,6 +169,19 @@ The timer section shows `● RUNNING HH:MM:SS` or `⏸ PAUSED HH:MM:SS` and the 
 
 ---
 
+### Summary View
+
+Press `s` from the tree to see sessions logged today (default) or this week (toggle with `w`). Sessions are grouped by project and task with time ranges and durations. A grand total appears at the bottom.
+
+| Key | Action |
+|-----|--------|
+| `↑` / `k` | Scroll up |
+| `↓` / `j` | Scroll down |
+| `w` | Toggle between today and this week |
+| `esc` / `q` | Return to tree |
+
+---
+
 ### Report View
 
 Summary of all projects and tasks with time totals and proportional progress bars.
@@ -167,6 +190,9 @@ Summary of all projects and tasks with time totals and proportional progress bar
 |-----|--------|
 | `↑` / `k` | Scroll up |
 | `↓` / `j` | Scroll down |
+| `f` | Filter by tag (tag-picker overlay) |
+| `$` | Toggle earnings column |
+| `x` | Export report (CSV or plain text) |
 | `R` / `q` / `esc` | Return to tree |
 | `?` | Toggle full key list |
 
@@ -258,25 +284,32 @@ Press `H` from **any view** to open the full in-app help reference. It covers ev
 
 ```
 shellclock/
-├── main.go                  # Entry point; routes import subcommand or launches TUI
+├── main.go                      # Entry point; routes import subcommand or launches TUI
 ├── internal/
 │   ├── model/
-│   │   └── model.go         # Data types and JSON persistence
+│   │   ├── model.go             # Data types and JSON persistence
+│   │   └── backup.go            # Automatic daily backup logic
 │   ├── importer/
-│   │   └── toggl.go         # Toggl CSV import logic
+│   │   └── toggl.go             # Toggl CSV import logic
 │   ├── ui/
-│   │   ├── app.go           # Root Bubble Tea model, view routing, tick chain
-│   │   ├── tree.go          # Project/task tree view (live timer overview)
-│   │   ├── taskdetail.go    # Task detail view (timer + session management)
-│   │   ├── report.go        # Summary report view
-│   │   ├── edit.go          # Dedicated session editor view
-│   │   ├── themepicker.go   # Theme selection view
-│   │   ├── help.go          # Full-screen help reference view
-│   │   ├── themes.go        # Theme definitions and ApplyTheme()
-│   │   ├── styles.go        # Global style variables
-│   │   └── keys.go          # Keybinding definitions
+│   │   ├── app.go               # Root Bubble Tea model, view routing, tick chain
+│   │   ├── tree.go              # Project/task tree view (live timer overview)
+│   │   ├── taskdetail.go        # Task detail view (timer + session management)
+│   │   ├── summary.go           # Daily/weekly session summary view
+│   │   ├── report.go            # Summary report view with earnings
+│   │   ├── edit.go              # Dedicated session editor view
+│   │   ├── export.go            # Report export (CSV / plain text)
+│   │   ├── themepicker.go       # Theme selection view
+│   │   ├── help.go              # Full-screen help reference view
+│   │   ├── confirm.go           # Delete confirmation modal overlay
+│   │   ├── backup_overlay.go    # Backup browser and restore overlay
+│   │   ├── tagpicker_overlay.go # Tag filter overlay for report view
+│   │   ├── idle.go              # Idle timer warning badge logic
+│   │   ├── themes.go            # Theme definitions and ApplyTheme()
+│   │   ├── styles.go            # Global style variables
+│   │   └── keys.go              # Keybinding definitions
 │   └── util/
-│       └── format.go        # Duration formatting helpers
+│       └── format.go            # Duration formatting helpers
 ```
 
 ---

@@ -898,7 +898,7 @@ func (m TreeModel) View() string {
 	if m.mode != inputNone {
 		km = inputKeyMap{m.keys}
 	} else {
-		km = treeKeyMap{m.keys}
+		km = treeKeyMap{m.keys, m.width}
 	}
 	sb.WriteString(m.help.View(km))
 
