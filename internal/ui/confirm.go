@@ -88,6 +88,79 @@ func renderConfirmOverlay(bg, msg string, termW, termH int) string {
 	return strings.Join(dimmed, "\n")
 }
 
+// renderResetOverlay composites a centered system-reset confirmation modal over
+// a dimmed copy of bg. inputView is the rendered text input the user types into.
+func renderResetOverlay(bg, inputView string, termW, termH int) string {
+	if termW <= 0 {
+		termW = 80
+	}
+	if termH <= 0 {
+		termH = 24
+	}
+
+	titleStyle := lipgloss.NewStyle().Foreground(colorRed).Bold(true)
+	title := titleStyle.Render("⚠  System Reset")
+	warn1 := StyleError.Render("This will permanently erase ALL projects, tasks, and sessions.")
+	warn2 := StyleDimmed.Render("Backups are not affected. This action cannot be undone.")
+	prompt := StyleInputLabel.Render("Type CONFIRM to proceed:")
+	cancel := StyleDimmed.Render("[esc] cancel   [enter] execute if CONFIRM is typed")
+
+	content := title + "\n\n" +
+		warn1 + "\n" +
+		warn2 + "\n\n" +
+		prompt + "\n" +
+		inputView + "\n\n" +
+		cancel
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colorRed).
+		Background(colorBase).
+		Padding(1, 4)
+
+	modal := modalStyle.Render(content)
+
+	const dimColor = "\033[2m\033[38;2;80;80;100m"
+	const rst = "\033[0m"
+
+	bgLines := strings.Split(bg, "\n")
+	for len(bgLines) < termH {
+		bgLines = append(bgLines, "")
+	}
+	dimmed := make([]string, len(bgLines))
+	for i, ln := range bgLines {
+		dimmed[i] = dimColor + stripAnsi(ln) + rst
+	}
+
+	modalLines := strings.Split(modal, "\n")
+	mH := len(modalLines)
+	mW := 0
+	for _, l := range modalLines {
+		if w := lipgloss.Width(l); w > mW {
+			mW = w
+		}
+	}
+
+	startRow := (termH - mH) / 2
+	startCol := (termW - mW) / 2
+	if startRow < 0 {
+		startRow = 0
+	}
+	if startCol < 0 {
+		startCol = 0
+	}
+
+	for i, mLine := range modalLines {
+		idx := startRow + i
+		if idx < 0 || idx >= len(dimmed) {
+			continue
+		}
+		dimmed[idx] = overlayLine(dimmed[idx], mLine, startCol)
+	}
+
+	return strings.Join(dimmed, "\n")
+}
+
 // overlayLine inserts fg starting at visible column col within the already-dimmed
 // bg line.  bg is plain text wrapped in dim ANSI codes; we strip those to find
 // column positions, then re-wrap the left/right portions around fg.

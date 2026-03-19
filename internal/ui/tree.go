@@ -75,6 +75,10 @@ type TreeModel struct {
 	backupInfoActive bool
 	backupList       []string
 
+	// master reset overlay
+	masterResetActive bool
+	masterResetInput  textinput.Model
+
 	// signals consumed by App
 	WantsQuit           bool
 	SwitchToTaskDetail  bool
@@ -94,15 +98,24 @@ func NewTreeModel(store *model.Store, keys KeyMap) TreeModel {
 	ti.TextStyle = StyleTask
 	ti.PlaceholderStyle = StyleDimmed
 
+	ri := textinput.New()
+	ri.CharLimit = 7 // len("CONFIRM")
+	ri.Prompt = "> "
+	ri.PromptStyle = StyleError
+	ri.TextStyle = StyleError
+	ri.PlaceholderStyle = StyleDimmed
+	ri.Placeholder = "CONFIRM"
+
 	h := help.New()
 	h.Styles = helpStyles()
 
 	m := TreeModel{
-		store:     store,
-		keys:      keys,
-		expanded:  make(map[string]bool),
-		textInput: ti,
-		help:      h,
+		store:            store,
+		keys:             keys,
+		expanded:         make(map[string]bool),
+		textInput:        ti,
+		masterResetInput: ri,
+		help:             h,
 	}
 	for _, p := range store.Projects {
 		m.expanded[p.ID] = true
@@ -219,6 +232,32 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 		if m.backupInfoActive {
 			m.backupInfoActive = false
 			return m, nil
+		}
+
+		// ── Master reset overlay ───────────────────────────────────────────
+		if m.masterResetActive {
+			switch msg.Type {
+			case tea.KeyEscape:
+				m.masterResetActive = false
+				m.masterResetInput.SetValue("")
+				m.masterResetInput.Blur()
+			case tea.KeyEnter:
+				if m.masterResetInput.Value() == "CONFIRM" {
+					m.store.Projects = nil
+					m.store.ActiveTimer = nil
+					_ = m.store.Save()
+					m.masterResetActive = false
+					m.masterResetInput.SetValue("")
+					m.masterResetInput.Blur()
+					m.expanded = make(map[string]bool)
+					m.cursor = 0
+					m.offset = 0
+					m.buildItems()
+				}
+			default:
+				m.masterResetInput, cmd = m.masterResetInput.Update(msg)
+			}
+			return m, cmd
 		}
 
 		// ── Confirm-delete modal ───────────────────────────────────────────
@@ -557,6 +596,12 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			m.help.ShowAll = m.showFull
 			m.scrollToCursor()
 
+		case "X":
+			m.masterResetActive = true
+			m.masterResetInput.SetValue("")
+			cmd = m.masterResetInput.Focus()
+			return m, cmd
+
 		case "q":
 			m.WantsQuit = true
 		}
@@ -737,6 +782,9 @@ func (m TreeModel) View() string {
 	}
 	if m.backupInfoActive {
 		return renderBackupOverlay(panel, m.backupList, m.width, m.height)
+	}
+	if m.masterResetActive {
+		return renderResetOverlay(panel, m.masterResetInput.View(), m.width, m.height)
 	}
 	return panel
 }

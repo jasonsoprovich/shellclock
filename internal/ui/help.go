@@ -191,6 +191,7 @@ func (m *HelpModel) buildLines() {
 	add(row("R", "Open report view"))
 	add(row("T", "Open theme picker"))
 	add(row("B", "Show backup info overlay"))
+	add(row("X", "System reset — erase all data (requires typing CONFIRM)"))
 	add(row("H", "Open this help screen"))
 	add(row("?", "Toggle compact key reference bar"))
 	add(row("q / ctrl+c", "Quit"))
