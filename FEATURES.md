@@ -14,6 +14,7 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **One-timer constraint** — only one timer can run at a time
 
 ### Tree View
+- [x] **ASCII logo header** — 3-line compact ASCII art for "shellclock" rendered in `StyleLogo` (theme `colorMauve`); adapts instantly to theme changes via `ApplyTheme`; followed by a one-line summary: current date · project count · task count · total tracked time
 - [x] **Collapsible project/task tree** — expand/collapse with arrow keys or `h`/`l`
 - [x] **Create project** (`N`) — inline text input prompt
 - [x] **Create task** (`n`) — inline text input prompt, added under focused project

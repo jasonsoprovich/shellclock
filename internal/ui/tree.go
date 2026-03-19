@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,6 +14,16 @@ import (
 	"github.com/jasonsoprovich/shellclock/internal/model"
 	"github.com/jasonsoprovich/shellclock/internal/util"
 )
+
+// renderLogo returns a 3-line lipgloss bordered wordmark for "shellclock".
+func renderLogo() string {
+	inner := StyleLogo.Render("◷") + "  " + StyleLogo.Bold(true).Render("shellclock")
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colorOverlay).
+		Padding(0, 1).
+		Render(inner)
+}
 
 type inputMode int
 
@@ -119,13 +130,13 @@ func (m *TreeModel) buildItems() {
 
 // listHeight returns how many rows the list area should occupy.
 // Panel outer height = content height + 2 (border, no vertical padding).
-// Fixed content lines: title(1) + blank(1) + spacer(1) + help(1) = 4.
+// Fixed content lines: logo(3) + subline(1) + timer(1) + spacer(1) + help(1) = 7.
 func (m *TreeModel) listHeight() int {
 	h := m.height
 	if h == 0 {
 		h = 24
 	}
-	fixed := 6 // 2 border + 4 fixed content lines
+	fixed := 9 // 2 border + 7 fixed content lines
 	if m.mode != inputNone {
 		fixed += 2 // blank line + input line
 	}
@@ -501,6 +512,40 @@ func (m *TreeModel) startTimerForCursor() tea.Cmd {
 	return tick()
 }
 
+// renderHeader renders the lipgloss logo wordmark and a one-line stats summary.
+func (m *TreeModel) renderHeader() string {
+	var sb strings.Builder
+	sb.WriteString(renderLogo())
+	sb.WriteString("\n")
+
+	nProjects := len(m.store.Projects)
+	nTasks := 0
+	var totalSecs int64
+	for _, p := range m.store.Projects {
+		nTasks += len(p.Tasks)
+		totalSecs += p.TotalSeconds()
+	}
+
+	pWord := "projects"
+	if nProjects == 1 {
+		pWord = "project"
+	}
+	tWord := "tasks"
+	if nTasks == 1 {
+		tWord = "task"
+	}
+	totalStr := util.FormatDuration(totalSecs) + " total"
+	if totalSecs == 0 {
+		totalStr = "no time tracked"
+	}
+
+	dateStr := time.Now().Format("Mon Jan 2, 2006")
+	stats := fmt.Sprintf("%s  ·  %d %s  ·  %d %s  ·  %s",
+		dateStr, nProjects, pWord, nTasks, tWord, totalStr)
+	sb.WriteString(StyleDimmed.Render(stats))
+	return sb.String()
+}
+
 func (m TreeModel) View() string {
 	w := m.width
 	if w == 0 {
@@ -515,9 +560,11 @@ func (m TreeModel) View() string {
 
 	var sb strings.Builder
 
-	// ── Title + active timer status (always 2 lines) ───────────────────────
-	sb.WriteString(StyleTitle.Render("shellclock"))
+	// ── Logo + stats subline (4 lines) ────────────────────────────────────
+	sb.WriteString(m.renderHeader())
 	sb.WriteString("\n")
+
+	// ── Active timer status (always 1 line) ───────────────────────────────
 	if m.store.ActiveTimer != nil {
 		at := m.store.ActiveTimer
 		elapsed := at.AccumulatedSeconds

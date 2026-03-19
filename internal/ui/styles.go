@@ -61,6 +61,9 @@ var (
 	StyleInputLabel = lipgloss.NewStyle().
 			Foreground(colorYellow).
 			Bold(true)
+
+	StyleLogo = lipgloss.NewStyle().
+			Foreground(colorMauve)
 )
 
 // helpStyles returns help.Styles built from the current palette variables.

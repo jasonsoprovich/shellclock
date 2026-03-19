@@ -401,4 +401,7 @@ func ApplyTheme(t Theme) {
 	StyleInputLabel = lipgloss.NewStyle().
 		Foreground(colorYellow).
 		Bold(true)
+
+	StyleLogo = lipgloss.NewStyle().
+		Foreground(colorMauve)
 }
