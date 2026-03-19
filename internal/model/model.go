@@ -10,6 +10,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// DefaultIdleWarnThresholdMins is the out-of-the-box idle-warning threshold.
+// Change this constant to adjust the default for new installs; existing data
+// files store their own value and are unaffected.
+const DefaultIdleWarnThresholdMins = 120 // 2 hours
+
+// IdleWarnSettings controls the idle-timer warning indicator.
+type IdleWarnSettings struct {
+	Enabled       bool `json:"enabled"`
+	ThresholdMins int  `json:"threshold_mins"`
+}
+
 // Session represents a single timed work interval.
 type Session struct {
 	ID              string    `json:"id"`
@@ -65,9 +76,10 @@ type ActiveTimer struct {
 
 // Store is the root data structure serialised to disk.
 type Store struct {
-	Projects    []Project    `json:"projects"`
-	ActiveTimer *ActiveTimer `json:"active_timer,omitempty"`
-	Theme       string       `json:"theme,omitempty"` // theme name; empty → default
+	Projects    []Project        `json:"projects"`
+	ActiveTimer *ActiveTimer     `json:"active_timer,omitempty"`
+	Theme       string           `json:"theme,omitempty"`
+	IdleWarn    IdleWarnSettings `json:"idle_warn"`
 
 	path string
 }
@@ -87,7 +99,15 @@ func Load() (*Store, error) {
 		return nil, err
 	}
 
-	s := &Store{path: p}
+	// Pre-initialise with defaults so fields absent from JSON keep their
+	// intended default values after unmarshaling.
+	s := &Store{
+		path: p,
+		IdleWarn: IdleWarnSettings{
+			Enabled:       true,
+			ThresholdMins: DefaultIdleWarnThresholdMins,
+		},
+	}
 
 	data, err := os.ReadFile(p)
 	if os.IsNotExist(err) {
@@ -99,6 +119,10 @@ func Load() (*Store, error) {
 
 	if err := json.Unmarshal(data, s); err != nil {
 		return nil, fmt.Errorf("parse store: %w", err)
+	}
+	// Guard against a zero threshold written by external editing.
+	if s.IdleWarn.ThresholdMins <= 0 {
+		s.IdleWarn.ThresholdMins = DefaultIdleWarnThresholdMins
 	}
 	return s, nil
 }

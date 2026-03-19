@@ -29,6 +29,7 @@ type KeyMap struct {
 	Filter       key.Binding
 	BackupInfo   key.Binding
 	MasterReset  key.Binding
+	IdleWarn     key.Binding
 	Quit         key.Binding
 	Help         key.Binding
 	HelpScreen   key.Binding
@@ -60,6 +61,7 @@ func DefaultKeyMap() KeyMap {
 		Filter:      key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "filter by tag")),
 		BackupInfo:  key.NewBinding(key.WithKeys("B"), key.WithHelp("B", "backups")),
 		MasterReset: key.NewBinding(key.WithKeys("X"), key.WithHelp("X", "system reset")),
+		IdleWarn:    key.NewBinding(key.WithKeys("W"), key.WithHelp("W", "idle warn settings")),
 		Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 		Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more keys")),
 		HelpScreen:  key.NewBinding(key.WithKeys("H"), key.WithHelp("H", "help")),
@@ -85,7 +87,7 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 		{k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete},
 		{k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker},
 		{k.km.TreeTimer, k.km.Stop, k.km.Reset, k.km.EditTags},
-		{k.km.Summary, k.km.BackupInfo, k.km.MasterReset, k.km.HelpScreen, k.km.Quit, k.km.Help},
+		{k.km.Summary, k.km.BackupInfo, k.km.IdleWarn, k.km.MasterReset, k.km.HelpScreen, k.km.Quit, k.km.Help},
 	}
 }
 

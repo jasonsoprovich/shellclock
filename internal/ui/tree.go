@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,11 +29,12 @@ func renderLogo() string {
 type inputMode int
 
 const (
-	inputNone    inputMode = iota
-	inputProject           // naming a new project
-	inputTask              // naming a new task
-	inputRename            // renaming an existing project or task
-	inputTags              // editing comma-separated tags for a project
+	inputNone      inputMode = iota
+	inputProject             // naming a new project
+	inputTask                // naming a new task
+	inputRename              // renaming an existing project or task
+	inputTags                // editing comma-separated tags for a project
+	inputIdleWarn            // setting idle-warn threshold (minutes; 0 = disable)
 )
 
 // treeItem is one visible row in the flattened tree.
@@ -64,6 +66,9 @@ type TreeModel struct {
 	// help component
 	help     help.Model
 	showFull bool
+
+	// idle-warn flash state — flips every tick so the indicator blinks
+	flashOn bool
 
 	// confirm-delete modal
 	confirmActive bool
@@ -221,6 +226,7 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
+		m.flashOn = !m.flashOn
 		m.buildItems()
 		return m, nil
 
@@ -419,6 +425,18 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 					m.store.UpdateProjectTags(m.tagProjectID, tags)
 					_ = m.store.Save()
 					m.buildItems()
+
+				case inputIdleWarn:
+					mins, err := strconv.Atoi(val)
+					if err == nil {
+						if mins <= 0 {
+							m.store.IdleWarn.Enabled = false
+						} else {
+							m.store.IdleWarn.Enabled = true
+							m.store.IdleWarn.ThresholdMins = mins
+						}
+						_ = m.store.Save()
+					}
 				}
 				m.mode = inputNone
 				m.textInput.Blur()
@@ -647,6 +665,23 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			m.help.ShowAll = m.showFull
 			m.scrollToCursor()
 
+		case "W":
+			warn := m.store.IdleWarn
+			cur := warn.ThresholdMins
+			if cur <= 0 {
+				cur = model.DefaultIdleWarnThresholdMins
+			}
+			if !warn.Enabled {
+				cur = 0
+			}
+			m.mode = inputIdleWarn
+			m.textInput.CharLimit = 6
+			m.textInput.Placeholder = "minutes (0 to disable)"
+			m.textInput.SetValue(fmt.Sprintf("%d", cur))
+			m.textInput.CursorEnd()
+			cmd = m.textInput.Focus()
+			return m, cmd
+
 		case "X":
 			m.masterResetActive = true
 			m.masterResetInput.SetValue("")
@@ -752,11 +787,15 @@ func (m TreeModel) View() string {
 			tn = truncate(t.Name, 20)
 		}
 		pauseStyle := lipgloss.NewStyle().Foreground(colorYellow).Bold(true)
+		warnStyle := lipgloss.NewStyle().Foreground(colorYellow).Bold(true)
 		var badge string
 		if at.Paused {
 			badge = pauseStyle.Render("⏸  PAUSED  " + util.FormatDurationShort(elapsed))
 		} else {
 			badge = StyleTimer.Render("●  RUNNING  " + util.FormatDurationShort(elapsed))
+		}
+		if !at.Paused && isIdleWarning(m.store) && m.flashOn {
+			badge += "  " + warnStyle.Render(idleWarnLabel(m.store))
 		}
 		sb.WriteString(
 			badge +
@@ -806,6 +845,8 @@ func (m TreeModel) View() string {
 			label = "Rename"
 		case inputTags:
 			label = "Tags"
+		case inputIdleWarn:
+			label = "Idle warn (mins, 0 = disable)"
 		}
 		sb.WriteString("\n")
 		sb.WriteString(StyleInputLabel.Render(label+":") + " " + m.textInput.View())

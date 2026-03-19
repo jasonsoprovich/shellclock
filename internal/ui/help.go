@@ -191,6 +191,7 @@ func (m *HelpModel) buildLines() {
 	add(row("R", "Open report view"))
 	add(row("T", "Open theme picker"))
 	add(row("B", "Open backup picker — navigate and restore a backup"))
+	add(row("W", "Idle warn settings — set threshold in minutes (0 = disable)"))
 	add(row("X", "System reset — erase all data (requires typing CONFIRM)"))
 	add(row("H", "Open this help screen"))
 	add(row("?", "Toggle compact key reference bar"))
@@ -297,6 +298,20 @@ func (m *HelpModel) buildLines() {
 	add(row("enter", "Prompt to restore selected backup"))
 	add(row("y", "Confirm restore (overwrites current data)"))
 	add(row("n / esc", "Cancel"))
+	blank()
+
+	// ── Idle Warn ────────────────────────────────────────────────────────────
+	add(sep())
+	add(h2("Idle Timer Warning"))
+	add(sep())
+	blank()
+	add(dim("When a timer runs past the configured threshold, a flashing ⚠ Nh+"))
+	add(dim("indicator appears next to the timer badge in the tree and task detail views."))
+	add(dim("The warning only fires when the timer is running (not paused)."))
+	blank()
+	add(row("W", "Open idle-warn settings (from tree view)"))
+	add(note("Enter a threshold in minutes.  Enter 0 to disable the warning."))
+	add(note("Default: 120 minutes (2 hours).  Setting is saved to the data file."))
 	blank()
 
 	// ── CLI Commands ─────────────────────────────────────────────────────────

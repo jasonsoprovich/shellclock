@@ -46,6 +46,9 @@ type TaskDetailModel struct {
 	confirmMsg       string
 	confirmSessionID string
 
+	// idle-warn flash state
+	flashOn bool
+
 	SwitchToTree bool
 }
 
@@ -269,6 +272,11 @@ func (m TaskDetailModel) Update(msg tea.Msg) (TaskDetailModel, tea.Cmd) {
 		return m, nil
 	}
 
+	if _, ok := msg.(tickMsg); ok {
+		m.flashOn = !m.flashOn
+		return m, nil
+	}
+
 	key, isKey := msg.(tea.KeyMsg)
 
 	// ── Form mode ────────────────────────────────────────────────────────────
@@ -465,11 +473,16 @@ func (m TaskDetailModel) View() string {
 
 	if isActive {
 		elapsed := m.elapsed()
+		warnStyle := lipgloss.NewStyle().Foreground(colorYellow).Bold(true)
 		if at.Paused {
 			pauseStyle := lipgloss.NewStyle().Foreground(colorYellow).Bold(true)
 			sb.WriteString(centre.Render(pauseStyle.Render("⏸  PAUSED  " + util.FormatDurationShort(elapsed))))
 		} else {
-			sb.WriteString(centre.Render(StyleTimer.Render("●  RUNNING  " + util.FormatDurationShort(elapsed))))
+			runBadge := StyleTimer.Render("●  RUNNING  " + util.FormatDurationShort(elapsed))
+			if isIdleWarning(m.store) && m.flashOn {
+				runBadge += "  " + warnStyle.Render(idleWarnLabel(m.store))
+			}
+			sb.WriteString(centre.Render(runBadge))
 		}
 		sb.WriteString("\n")
 		sb.WriteString(centre.Render(StyleDimmed.Render("started  ") + StyleTask.Render(at.OriginalStart.Format("2006-01-02  15:04:05"))))

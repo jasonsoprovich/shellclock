@@ -83,6 +83,13 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Automatic daily backup** — on every launch, before data is loaded, `model.RunBackup()` copies `shellclock.json` to `~/.config/shellclock/backups/shellclock-YYYY-MM-DD.json`; one backup per calendar day; at most 7 backups retained (oldest pruned automatically); completely silent with no UI interaction required
 - [x] **Backup info overlay** (`B` in tree view) — centered modal over dimmed background listing all available backup files newest-first, and showing the full backup directory path; dismissed by `esc` or any key
 
+### Idle Timer Warning
+
+- [x] **Idle warning indicator** — when a timer has been running (not paused) past the configured threshold, a flashing `⚠ Nh+` badge appears next to the timer badge in both the tree view and task detail view. The indicator alternates on/off every second using the existing tick chain. No automatic action is taken — it is purely visual.
+- [x] **Configurable threshold** (`W` in tree view) — opens an inline prompt pre-filled with the current threshold in minutes; entering `0` disables the feature. Default: 120 minutes (2 hours). Setting is persisted in the data file under `idle_warn`.
+- [x] **`DefaultIdleWarnThresholdMins = 120`** — named constant in `model/model.go`; change it to adjust the default for new installs without touching existing data files.
+- [x] **On by default** — new and existing data files without `idle_warn` in JSON initialize to `{enabled: true, threshold_mins: 120}`.
+
 ### Summary View
 
 - [x] **Summary view** (`s` from tree view) — shows all sessions logged today (default) or this week, grouped by project → task. Each session row displays its time range (e.g., `10:05 AM — 11:30 AM`) and duration, right-aligned. Project and task subtotals shown. Grand total at the bottom. Toggle between today and this week with `w`. Scroll with `↑`/`↓` or `j`/`k`; dismiss with `esc` or `q`. Empty-state message when no sessions exist for the selected period.
