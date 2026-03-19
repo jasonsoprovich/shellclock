@@ -21,7 +21,7 @@ builds:
       - -s -w -X main.version={{ .Version }}
 
 archives:
-  - format: tar.gz
+  - formats: ["tar.gz"]
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -39,8 +39,10 @@ changelog:
       - "^test:"
       - "^chore:"
 
-brews:
+homebrew_casks:
   - name: shellclock
+    binaries:
+      - shellclock
     repository:
       owner: jasonsoprovich
       name: homebrew-shellclock
@@ -48,5 +50,3 @@ brews:
     homepage: "https://github.com/jasonsoprovich/shellclock"
     description: "Terminal UI time tracker — projects, tasks, and timed sessions in your terminal"
     license: "MIT"
-    install: |
-      bin.install "shellclock"
