@@ -266,7 +266,7 @@ func (m ReportModel) View() string {
 	//   nameGap  = 2   (space between name and bar)
 	//   barGap   = 1   (space between bar and duration)
 	//   nameW    = remainder
-	const durW, barW, nameGap, barGap = 11, 20, 2, 1
+	const durW, barW, nameGap, barGap = 13, 20, 2, 1
 	nameW := innerW - barW - nameGap - barGap - durW
 	if nameW < 10 {
 		nameW = 10
