@@ -14,7 +14,7 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **One-timer constraint** — only one timer can run at a time
 
 ### Tree View
-- [x] **ASCII logo header** — 3-line compact ASCII art for "shellclock" rendered in `StyleLogo` (theme `colorMauve`); adapts instantly to theme changes via `ApplyTheme`; followed by a one-line summary: current date · project count · task count · total tracked time
+- [x] **Lipgloss wordmark logo** — rounded-border wordmark (`◷ shellclock`) rendered with lipgloss using `colorOverlay` border and `colorMauve` bold text; adapts to theme changes via `ApplyTheme`; followed by a one-line summary: current date · project count · task count · total tracked time
 - [x] **Collapsible project/task tree** — expand/collapse with arrow keys or `h`/`l`
 - [x] **Create project** (`N`) — inline text input prompt
 - [x] **Create task** (`n`) — inline text input prompt, added under focused project
@@ -63,6 +63,10 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Live preview** — theme applies immediately on up/down in picker; Esc reverts
 - [x] **Theme persistence** — selected theme name stored in JSON; restored on next launch
 - [x] **Colour swatches** — each theme row shows 7 representative colour squares in its own colours
+
+### Backup
+- [x] **Automatic daily backup** — on every launch, before data is loaded, `model.RunBackup()` copies `shellclock.json` to `~/.config/shellclock/backups/shellclock-YYYY-MM-DD.json`; one backup per calendar day; at most 7 backups retained (oldest pruned automatically); completely silent with no UI interaction required
+- [x] **Backup info overlay** (`B` in tree view) — centered modal over dimmed background listing all available backup files newest-first, and showing the full backup directory path; dismissed by `esc` or any key
 
 ### UI / Polish
 - [x] **Rounded-border panels** — all views use Lip Gloss `RoundedBorder`

@@ -11,6 +11,8 @@ import (
 )
 
 func main() {
+	model.RunBackup()
+
 	store, err := model.Load()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "shellclock: failed to load data: %v\n", err)

@@ -69,6 +69,10 @@ type TreeModel struct {
 	confirmProjID string // project to delete (or parent of task)
 	confirmTaskID string // task to delete; empty → delete the project
 
+	// backup info overlay
+	backupInfoActive bool
+	backupList       []string
+
 	// signals consumed by App
 	WantsQuit           bool
 	SwitchToTaskDetail  bool
@@ -205,6 +209,12 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 		// Always quit on ctrl+c; handled globally in App but guard here too.
 		if msg.String() == "ctrl+c" {
 			m.WantsQuit = true
+			return m, nil
+		}
+
+		// ── Backup info overlay — any key closes it ───────────────────────
+		if m.backupInfoActive {
+			m.backupInfoActive = false
 			return m, nil
 		}
 
@@ -477,6 +487,11 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 		case "T":
 			m.SwitchToThemePicker = true
 
+		case "B":
+			backs, _ := model.ListBackups()
+			m.backupList = backs
+			m.backupInfoActive = true
+
 		case "?":
 			m.showFull = !m.showFull
 			m.help.ShowAll = m.showFull
@@ -657,6 +672,9 @@ func (m TreeModel) View() string {
 		Render(sb.String())
 	if m.confirmActive {
 		return renderConfirmOverlay(panel, m.confirmMsg, m.width, m.height)
+	}
+	if m.backupInfoActive {
+		return renderBackupOverlay(panel, m.backupList, m.width, m.height)
 	}
 	return panel
 }

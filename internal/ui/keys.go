@@ -23,6 +23,7 @@ type KeyMap struct {
 	Report       key.Binding
 	ThemePicker  key.Binding
 	Export       key.Binding
+	BackupInfo   key.Binding
 	Quit         key.Binding
 	Help         key.Binding
 }
@@ -47,6 +48,7 @@ func DefaultKeyMap() KeyMap {
 		Report:      key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "report")),
 		ThemePicker: key.NewBinding(key.WithKeys("T"), key.WithHelp("T", "theme")),
 		Export:      key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "export")),
+		BackupInfo:  key.NewBinding(key.WithKeys("B"), key.WithHelp("B", "backups")),
 		Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 		Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more keys")),
 	}
@@ -71,7 +73,7 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 		{k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete},
 		{k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker},
 		{k.km.Start, k.km.Stop, k.km.Reset},
-		{k.km.Quit, k.km.Help},
+		{k.km.BackupInfo, k.km.Quit, k.km.Help},
 	}
 }
 
