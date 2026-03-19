@@ -27,9 +27,11 @@ Built with the [Charm](https://charm.sh) stack: Bubble Tea, Lip Gloss, and Bubbl
 
 ## Installation
 
-### Prerequisites
+### Homebrew (macOS and Linux)
 
-- Go 1.21 or later
+```bash
+brew install jasonsoprovich/shellclock/shellclock
+```
 
 ### Build from source
 
@@ -316,4 +318,4 @@ shellclock/
 
 ## License
 
-MIT
+[MIT](LICENSE)

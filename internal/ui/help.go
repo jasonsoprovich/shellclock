@@ -10,17 +10,18 @@ import (
 // HelpModel is a full-screen scrollable reference covering all keybindings
 // and CLI commands. Opened with H from any view; dismissed with esc or q.
 type HelpModel struct {
-	keys   KeyMap
-	lines  []string // pre-rendered content lines
-	offset int      // first visible line
-	width  int
-	height int
+	keys    KeyMap
+	version string
+	lines   []string // pre-rendered content lines
+	offset  int      // first visible line
+	width   int
+	height  int
 
 	SwitchToTree bool
 }
 
-func NewHelpModel(keys KeyMap) HelpModel {
-	m := HelpModel{keys: keys}
+func NewHelpModel(keys KeyMap, version string) HelpModel {
+	m := HelpModel{keys: keys, version: version}
 	m.buildLines()
 	return m
 }
@@ -153,6 +154,7 @@ func (m *HelpModel) buildLines() {
 
 	// ── Header ──────────────────────────────────────────────────────────────
 	add(h1("◷  shellclock — Help Reference"))
+	add(dim("version " + m.version))
 	blank()
 	add(dim("All views share the same data file. Changes are saved automatically."))
 	blank()

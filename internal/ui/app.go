@@ -34,6 +34,7 @@ func tick() tea.Cmd {
 type App struct {
 	store   *model.Store
 	keys    KeyMap
+	version string
 	current view
 
 	tree    TreeModel
@@ -52,20 +53,21 @@ type App struct {
 // sub-model is built so every style var is correct from the first render.
 // The app always opens on the tree view; the active timer (if any) is shown
 // inline there.
-func New(store *model.Store) App {
+func New(store *model.Store, version string) App {
 	ApplyTheme(ThemeByName(store.Theme))
 
 	keys := DefaultKeyMap()
 	return App{
 		store:   store,
 		keys:    keys,
+		version: version,
 		current: viewTree,
 		tree:    NewTreeModel(store, keys),
 		detail:  NewTaskDetailModel(store, keys),
 		report:  NewReportModel(store, keys),
 		edit:    NewEditModel(store, keys),
 		picker:  NewThemePickerModel(store, keys),
-		help:    NewHelpModel(keys),
+		help:    NewHelpModel(keys, version),
 		summary: NewSummaryModel(store, keys),
 	}
 }
@@ -100,7 +102,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// H opens the help screen from any view.
 	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "H" {
-		a.help = NewHelpModel(a.keys)
+		a.help = NewHelpModel(a.keys, a.version)
 		a.help.width = a.width
 		a.help.height = a.height
 		a.current = viewHelp

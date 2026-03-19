@@ -11,6 +11,9 @@ import (
 	"github.com/jasonsoprovich/shellclock/internal/ui"
 )
 
+// version is set at build time via -ldflags. Falls back to "dev" for local builds.
+var version = "dev"
+
 func main() {
 	// Handle CLI subcommands before launching the TUI.
 	if len(os.Args) >= 2 && os.Args[1] == "import" {
@@ -26,7 +29,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := ui.New(store)
+	app := ui.New(store, version)
 	p := tea.NewProgram(app, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "shellclock: %v\n", err)

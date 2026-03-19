@@ -1,0 +1,52 @@
+version: 2
+
+project_name: shellclock
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    main: .
+    binary: shellclock
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+brews:
+  - name: shellclock
+    repository:
+      owner: jasonsoprovich
+      name: homebrew-shellclock
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    homepage: "https://github.com/jasonsoprovich/shellclock"
+    description: "Terminal UI time tracker — projects, tasks, and timed sessions in your terminal"
+    license: "MIT"
+    install: |
+      bin.install "shellclock"
