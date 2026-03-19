@@ -42,6 +42,7 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Active timer notice** — running timer's elapsed time shown at top of report (not yet committed to totals)
 - [x] **Scrollable list** — scroll hints appear when content overflows
 - [x] **Correct column alignment at any width** — bar/duration columns stay aligned on window resize
+- [x] **Report export** (`x`) — inline menu to choose CSV or plain text; file saved to `~/.config/shellclock/reports/shellclock-report-YYYY-MM-DD.csv` / `.txt` (directory auto-created); CSV columns: Project, Task, Total Duration (h:mm:ss), Total Sessions; plain text mirrors the report view layout; confirmation message shows the full path after successful save
 
 ### Session Editor
 - [x] **Session list** — index, start, end, duration columns for all sessions on a task
@@ -75,6 +76,8 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 ## 🚧 In Progress
 
 _Nothing currently in progress._
+
+
 
 ---
 

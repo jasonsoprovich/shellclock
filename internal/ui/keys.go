@@ -22,6 +22,7 @@ type KeyMap struct {
 	Reset        key.Binding
 	Report       key.Binding
 	ThemePicker  key.Binding
+	Export       key.Binding
 	Quit         key.Binding
 	Help         key.Binding
 }
@@ -45,6 +46,7 @@ func DefaultKeyMap() KeyMap {
 		Reset:       key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reset")),
 		Report:      key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "report")),
 		ThemePicker: key.NewBinding(key.WithKeys("T"), key.WithHelp("T", "theme")),
+		Export:      key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "export")),
 		Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 		Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more keys")),
 	}
@@ -78,13 +80,13 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 type reportKeyMap struct{ km KeyMap }
 
 func (k reportKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.km.Up, k.km.Down, k.km.Esc, k.km.Help}
+	return []key.Binding{k.km.Up, k.km.Down, k.km.Export, k.km.Esc, k.km.Help}
 }
 
 func (k reportKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.km.Up, k.km.Down},
-		{k.km.Esc, k.km.Help},
+		{k.km.Export, k.km.Esc, k.km.Help},
 	}
 }
 

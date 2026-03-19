@@ -43,6 +43,9 @@ type ReportModel struct {
 	rows   []reportRow
 	offset int // first visible row index
 
+	exportMenu bool   // export format selection overlay is open
+	exportMsg  string // brief confirmation shown after a successful export
+
 	SwitchToTree bool
 }
 
@@ -122,6 +125,31 @@ func (m ReportModel) Update(msg tea.Msg) (ReportModel, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		if m.exportMenu {
+			switch msg.String() {
+			case "c":
+				filename, err := exportCSV(m.store)
+				if err != nil {
+					m.exportMsg = "error: " + err.Error()
+				} else {
+					m.exportMsg = "✓ exported to " + filename
+				}
+				m.exportMenu = false
+			case "t":
+				filename, err := exportText(m.store)
+				if err != nil {
+					m.exportMsg = "error: " + err.Error()
+				} else {
+					m.exportMsg = "✓ exported to " + filename
+				}
+				m.exportMenu = false
+			case "esc":
+				m.exportMenu = false
+			}
+			return m, nil
+		}
+		// Clear any lingering confirmation message on the next key.
+		m.exportMsg = ""
 		switch msg.String() {
 		case "esc", "q", "R":
 			m.SwitchToTree = true
@@ -129,6 +157,8 @@ func (m ReportModel) Update(msg tea.Msg) (ReportModel, tea.Cmd) {
 			m.scrollUp()
 		case "down", "j":
 			m.scrollDown()
+		case "x":
+			m.exportMenu = true
 		case "?":
 			m.showFull = !m.showFull
 			m.help.ShowAll = m.showFull
@@ -226,8 +256,17 @@ func (m ReportModel) View() string {
 
 	var body strings.Builder
 
-	// Empty state: render the message as the first body row, then pad.
-	if len(m.rows) == 0 {
+	if m.exportMenu {
+		// Export format selection menu replaces the body.
+		body.WriteString(StyleTitle.Render("Export Report") + "\n\n")
+		body.WriteString(StyleDimmed.Render("Choose a format to save in the current directory:") + "\n\n")
+		body.WriteString("  " + StyleProject.Render("[c]") + "  CSV          (.csv)\n")
+		body.WriteString("  " + StyleProject.Render("[t]") + "  Plain text   (.txt)\n")
+		for i := 5; i < lh; i++ {
+			body.WriteString("\n")
+		}
+	} else if len(m.rows) == 0 {
+		// Empty state: render the message as the first body row, then pad.
 		body.WriteString(StyleDimmed.Render("No data yet — create a project and track some time."))
 		body.WriteString("\n")
 		for i := 1; i < lh; i++ {
@@ -284,18 +323,26 @@ func (m ReportModel) View() string {
 
 	// Scroll indicator — always written as exactly one line so layout height
 	// stays stable regardless of whether the list is scrollable.
-	scrollHint := ""
-	canScrollUp := m.offset > 0
-	canScrollDown := m.offset+lh < len(m.rows)
-	if canScrollUp || canScrollDown {
-		parts := []string{}
-		if canScrollUp {
-			parts = append(parts, "↑ more above")
+	// Reused for export menu hints and post-export confirmation.
+	var scrollHint string
+	switch {
+	case m.exportMenu:
+		scrollHint = StyleDimmed.Render("[c] CSV   [t] plain text   [esc] cancel")
+	case m.exportMsg != "":
+		scrollHint = StyleDuration.Render(m.exportMsg)
+	default:
+		canScrollUp := m.offset > 0
+		canScrollDown := m.offset+lh < len(m.rows)
+		if canScrollUp || canScrollDown {
+			parts := []string{}
+			if canScrollUp {
+				parts = append(parts, "↑ more above")
+			}
+			if canScrollDown {
+				parts = append(parts, "↓ more below")
+			}
+			scrollHint = StyleDimmed.Render(strings.Join(parts, "   "))
 		}
-		if canScrollDown {
-			parts = append(parts, "↓ more below")
-		}
-		scrollHint = StyleDimmed.Render(strings.Join(parts, "   "))
 	}
 
 	// ── Help bar ──────────────────────────────────────────────────────────
