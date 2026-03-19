@@ -80,6 +80,7 @@ type TreeModel struct {
 	SwitchToTaskDetail  bool
 	SwitchToEdit        bool
 	SwitchToReport      bool
+	SwitchToSummary     bool
 	SwitchToThemePicker bool
 	SelectedProjectID   string
 	SelectedTaskID      string
@@ -445,6 +446,9 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			}
 
 		case "s":
+			m.SwitchToSummary = true
+
+		case "p":
 			at := m.store.ActiveTimer
 			if at == nil {
 				// Start timer for the focused task.

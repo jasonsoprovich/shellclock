@@ -83,9 +83,14 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Automatic daily backup** — on every launch, before data is loaded, `model.RunBackup()` copies `shellclock.json` to `~/.config/shellclock/backups/shellclock-YYYY-MM-DD.json`; one backup per calendar day; at most 7 backups retained (oldest pruned automatically); completely silent with no UI interaction required
 - [x] **Backup info overlay** (`B` in tree view) — centered modal over dimmed background listing all available backup files newest-first, and showing the full backup directory path; dismissed by `esc` or any key
 
+### Summary View
+
+- [x] **Summary view** (`s` from tree view) — shows all sessions logged today (default) or this week, grouped by project → task. Each session row displays its time range (e.g., `10:05 AM — 11:30 AM`) and duration, right-aligned. Project and task subtotals shown. Grand total at the bottom. Toggle between today and this week with `w`. Scroll with `↑`/`↓` or `j`/`k`; dismiss with `esc` or `q`. Empty-state message when no sessions exist for the selected period.
+- [x] **Timer key change in tree view** — to free `s` for the summary, the tree-view timer start/pause/resume moved from `s` to `p`. Task detail view is unchanged (`s`/`enter` still controls the timer there).
+
 ### Help Screen
 
-- [x] **In-app help screen** (`H` from any view) — full-screen scrollable reference panel covering all keybindings organized by view (Tree, Task Detail, Session Editor, Report, Theme Picker), backup info, CLI commands, and the Toggl importer. Scroll with `↑`/`↓` or `j`/`k`; dismiss with `esc` or `q`. Accessible globally — `H` is intercepted in the root App model before any view-specific handling.
+- [x] **In-app help screen** (`H` from any view) — full-screen scrollable reference panel covering all keybindings organized by view (Tree, Task Detail, Session Editor, Report, Theme Picker, Summary), backup info, CLI commands, and the Toggl importer. Scroll with `↑`/`↓` or `j`/`k`; dismiss with `esc` or `q`. Accessible globally — `H` is intercepted in the root App model before any view-specific handling.
 
 ### UI / Polish
 - [x] **Rounded-border panels** — all views use Lip Gloss `RoundedBorder`

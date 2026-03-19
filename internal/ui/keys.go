@@ -19,9 +19,11 @@ type KeyMap struct {
 	Rename       key.Binding
 	EditTags     key.Binding
 	Start        key.Binding
+	TreeTimer    key.Binding // start/pause/resume timer from tree view (p)
 	Stop         key.Binding
 	Reset        key.Binding
 	Report       key.Binding
+	Summary      key.Binding
 	ThemePicker  key.Binding
 	Export       key.Binding
 	Filter       key.Binding
@@ -47,9 +49,11 @@ func DefaultKeyMap() KeyMap {
 		Rename:      key.NewBinding(key.WithKeys("E"), key.WithHelp("E", "rename")),
 		EditTags:    key.NewBinding(key.WithKeys("#"), key.WithHelp("#", "edit tags")),
 		Start:       key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "start/pause/resume")),
+		TreeTimer:   key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "play/pause timer")),
 		Stop:        key.NewBinding(key.WithKeys("S"), key.WithHelp("S", "stop & save")),
 		Reset:       key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reset")),
 		Report:      key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "report")),
+		Summary:     key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "summary")),
 		ThemePicker: key.NewBinding(key.WithKeys("T"), key.WithHelp("T", "theme")),
 		Export:      key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "export")),
 		Filter:      key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "filter by tag")),
@@ -69,7 +73,7 @@ func (k treeKeyMap) ShortHelp() []key.Binding {
 		k.km.Up, k.km.Down,
 		k.km.NewProject, k.km.NewTask,
 		k.km.Enter, k.km.Delete,
-		k.km.Report, k.km.Quit, k.km.HelpScreen, k.km.Help,
+		k.km.Summary, k.km.Report, k.km.Quit, k.km.HelpScreen, k.km.Help,
 	}
 }
 
@@ -78,8 +82,8 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 		{k.km.Up, k.km.Down, k.km.Left, k.km.Right},
 		{k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete},
 		{k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker},
-		{k.km.Start, k.km.Stop, k.km.Reset, k.km.EditTags},
-		{k.km.BackupInfo, k.km.HelpScreen, k.km.Quit, k.km.Help},
+		{k.km.TreeTimer, k.km.Stop, k.km.Reset, k.km.EditTags},
+		{k.km.Summary, k.km.BackupInfo, k.km.HelpScreen, k.km.Quit, k.km.Help},
 	}
 }
 

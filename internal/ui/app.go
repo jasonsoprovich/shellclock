@@ -18,6 +18,7 @@ const (
 	viewEdit
 	viewThemePicker
 	viewHelp
+	viewSummary
 )
 
 // tickMsg is sent every second to drive the live timer display.
@@ -35,12 +36,13 @@ type App struct {
 	keys    KeyMap
 	current view
 
-	tree   TreeModel
-	detail TaskDetailModel
-	report ReportModel
-	edit   EditModel
-	picker ThemePickerModel
-	help   HelpModel
+	tree    TreeModel
+	detail  TaskDetailModel
+	report  ReportModel
+	edit    EditModel
+	picker  ThemePickerModel
+	help    HelpModel
+	summary SummaryModel
 
 	width  int
 	height int
@@ -64,6 +66,7 @@ func New(store *model.Store) App {
 		edit:    NewEditModel(store, keys),
 		picker:  NewThemePickerModel(store, keys),
 		help:    NewHelpModel(keys),
+		summary: NewSummaryModel(store, keys),
 	}
 }
 
@@ -91,6 +94,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.edit, _ = a.edit.Update(ws)
 		a.picker, _ = a.picker.Update(ws)
 		a.help, _ = a.help.Update(ws)
+		a.summary, _ = a.summary.Update(ws)
 		return a, nil
 	}
 
@@ -149,6 +153,13 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.report.width = a.width
 			a.report.height = a.height
 			a.current = viewReport
+		}
+		if a.tree.SwitchToSummary {
+			a.tree.SwitchToSummary = false
+			a.summary = NewSummaryModel(a.store, a.keys)
+			a.summary.width = a.width
+			a.summary.height = a.height
+			a.current = viewSummary
 		}
 		if a.tree.SwitchToThemePicker {
 			a.tree.SwitchToThemePicker = false
@@ -214,6 +225,17 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.help.SwitchToTree = false
 			a.current = viewTree
 		}
+
+	// ── Summary ───────────────────────────────────────────────────────────────
+	case viewSummary:
+		var c tea.Cmd
+		a.summary, c = a.summary.Update(msg)
+		cmds = append(cmds, c)
+
+		if a.summary.SwitchToTree {
+			a.summary.SwitchToTree = false
+			a.current = viewTree
+		}
 	}
 
 	return a, tea.Batch(cmds...)
@@ -231,6 +253,8 @@ func (a App) View() string {
 		return a.picker.View()
 	case viewHelp:
 		return a.help.View()
+	case viewSummary:
+		return a.summary.View()
 	default:
 		return a.tree.View()
 	}
