@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -75,6 +76,31 @@ func ListBackups() ([]string, error) {
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(names)))
 	return names, nil
+}
+
+// RestoreFromBackup reads the named backup file (filename only, not a full
+// path), unmarshals it, applies its contents to the live store, and saves the
+// result back to the data file. The store's path and Theme are preserved when
+// the backup contains no theme entry.
+func RestoreFromBackup(filename string, store *Store) error {
+	dir, err := BackupDir()
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(filepath.Join(dir, filename))
+	if err != nil {
+		return err
+	}
+	var tmp Store
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	store.Projects = tmp.Projects
+	store.ActiveTimer = tmp.ActiveTimer
+	if tmp.Theme != "" {
+		store.Theme = tmp.Theme
+	}
+	return store.Save()
 }
 
 func isBackupFile(name string) bool {

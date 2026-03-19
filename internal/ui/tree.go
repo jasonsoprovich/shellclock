@@ -71,9 +71,12 @@ type TreeModel struct {
 	confirmProjID string // project to delete (or parent of task)
 	confirmTaskID string // task to delete; empty → delete the project
 
-	// backup info overlay
-	backupInfoActive bool
-	backupList       []string
+	// backup picker overlay
+	backupInfoActive    bool
+	backupList          []string
+	backupCursor        int
+	backupConfirmActive bool
+	backupRestoreMsg    string
 
 	// master reset overlay
 	masterResetActive bool
@@ -228,9 +231,54 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			return m, nil
 		}
 
-		// ── Backup info overlay — any key closes it ───────────────────────
+		// ── Backup picker overlay ──────────────────────────────────────────
 		if m.backupInfoActive {
-			m.backupInfoActive = false
+			if m.backupConfirmActive {
+				switch msg.String() {
+				case "y":
+					if m.backupCursor < len(m.backupList) {
+						err := model.RestoreFromBackup(m.backupList[m.backupCursor], m.store)
+						if err != nil {
+							m.backupRestoreMsg = "restore failed: " + err.Error()
+						} else {
+							m.backupRestoreMsg = ""
+							m.backupInfoActive = false
+							m.backupConfirmActive = false
+							m.backupList = nil
+							m.backupCursor = 0
+							m.expanded = make(map[string]bool)
+							for _, p := range m.store.Projects {
+								m.expanded[p.ID] = true
+							}
+							m.cursor = 0
+							m.offset = 0
+							m.buildItems()
+						}
+					}
+				case "n", "esc":
+					m.backupConfirmActive = false
+				}
+			} else {
+				switch msg.String() {
+				case "up", "k":
+					if m.backupCursor > 0 {
+						m.backupCursor--
+					}
+				case "down", "j":
+					if m.backupCursor < len(m.backupList)-1 {
+						m.backupCursor++
+					}
+				case "enter":
+					if len(m.backupList) > 0 {
+						m.backupConfirmActive = true
+					}
+				case "esc", "q":
+					m.backupInfoActive = false
+					m.backupList = nil
+					m.backupCursor = 0
+					m.backupRestoreMsg = ""
+				}
+			}
 			return m, nil
 		}
 
@@ -589,6 +637,9 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 		case "B":
 			backs, _ := model.ListBackups()
 			m.backupList = backs
+			m.backupCursor = 0
+			m.backupConfirmActive = false
+			m.backupRestoreMsg = ""
 			m.backupInfoActive = true
 
 		case "?":
@@ -781,7 +832,7 @@ func (m TreeModel) View() string {
 		return renderConfirmOverlay(panel, m.confirmMsg, m.width, m.height)
 	}
 	if m.backupInfoActive {
-		return renderBackupOverlay(panel, m.backupList, m.width, m.height)
+		return renderBackupOverlay(panel, m.backupList, m.backupCursor, m.backupConfirmActive, m.width, m.height)
 	}
 	if m.masterResetActive {
 		return renderResetOverlay(panel, m.masterResetInput.View(), m.width, m.height)

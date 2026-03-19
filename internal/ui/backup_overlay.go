@@ -6,9 +6,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// renderBackupOverlay composites a centered backup-info modal over a dimmed
-// copy of bg. backups is the list of backup file names (newest first).
-func renderBackupOverlay(bg string, backups []string, termW, termH int) string {
+// renderBackupOverlay composites an interactive backup picker over a dimmed
+// copy of bg. cursor is the index of the selected backup; confirmActive
+// switches the footer to the restore-confirmation prompt.
+func renderBackupOverlay(bg string, backups []string, cursor int, confirmActive bool, termW, termH int) string {
 	if termW <= 0 {
 		termW = 80
 	}
@@ -32,26 +33,39 @@ func renderBackupOverlay(bg string, backups []string, termW, termH int) string {
 
 	if len(backups) == 0 {
 		lines = append(lines, dimStyle.Render("No backups yet."))
+		lines = append(lines, "")
+		lines = append(lines, dimStyle.Render("[esc] close"))
 	} else {
-		for _, name := range backups {
-			lines = append(lines, StyleTask.Render("  "+name))
+		for i, name := range backups {
+			if i == cursor {
+				lines = append(lines, StyleSelected.Render("  "+name+"  "))
+			} else {
+				lines = append(lines, StyleTask.Render("  "+name))
+			}
+		}
+		lines = append(lines, "")
+		if confirmActive {
+			lines = append(lines, lipgloss.NewStyle().Foreground(colorYellow).Bold(true).Render("Restore this backup? Current data will be overwritten."))
+			lines = append(lines, StyleTimer.Render("[y]")+StyleTask.Render(" restore")+"   "+dimStyle.Render("[n] / [esc] cancel"))
+		} else {
+			lines = append(lines, dimStyle.Render("↑/↓ select   enter restore   esc close"))
 		}
 	}
 
-	lines = append(lines, "")
-	lines = append(lines, dimStyle.Render("[esc] / any key  close"))
-
 	content := strings.Join(lines, "\n")
 
+	borderColor := colorBlue
+	if confirmActive {
+		borderColor = colorYellow
+	}
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(colorBlue).
+		BorderForeground(borderColor).
 		Background(colorBase).
 		Padding(1, 4)
 
 	modal := modalStyle.Render(content)
 
-	// Dim the background.
 	const dimColor = "\033[2m\033[38;2;80;80;100m"
 	const rst = "\033[0m"
 
