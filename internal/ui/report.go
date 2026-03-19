@@ -229,6 +229,9 @@ func (m ReportModel) Update(msg tea.Msg) (ReportModel, tea.Cmd) {
 			m.scrollDown()
 		case "x":
 			m.exportMenu = true
+		case "$":
+			m.store.ShowEarnings = !m.store.ShowEarnings
+			_ = m.store.Save()
 		case "f":
 			if len(m.allTags) > 0 {
 				m.tagPicker = true
@@ -261,24 +264,33 @@ func (m ReportModel) View() string {
 	}
 
 	// Column widths.
-	//   durW     = 11  (right-aligned duration, e.g. "1h 23m 45s")
-	//   barW     = 20  (progress bar)
-	//   nameGap  = 2   (space between name and bar)
-	//   barGap   = 1   (space between bar and duration)
-	//   nameW    = remainder
+	//   durW    = 13  (right-aligned duration, e.g. "108h 48m 00s")
+	//   barW    = 20  (progress bar)
+	//   nameGap = 2   (space between name and bar)
+	//   barGap  = 1   (space between bar and duration)
+	//   earnW   = 10  (earnings, e.g. "$99999.99") — only when ShowEarnings
+	//   earnGap = 2
+	//   nameW   = remainder
 	const durW, barW, nameGap, barGap = 13, 20, 2, 1
+	const earnW, earnGap = 10, 2
+	showEarnings := m.store.ShowEarnings
 	nameW := innerW - barW - nameGap - barGap - durW
+	if showEarnings {
+		nameW -= earnGap + earnW
+	}
 	if nameW < 10 {
 		nameW = 10
 	}
 
-	// Compute grand total (respects active tag filter).
+	// Compute grand total and grand earnings (respects active tag filter).
 	var grandTotal int64
+	var grandEarnings float64
 	for i := range m.store.Projects {
 		if m.tagFilter != "" && !projectHasTag(m.store.Projects[i], m.tagFilter) {
 			continue
 		}
 		grandTotal += m.store.Projects[i].TotalSeconds()
+		grandEarnings += m.store.Projects[i].Earnings()
 	}
 
 	// ── Header ────────────────────────────────────────────────────────────
@@ -290,7 +302,10 @@ func (m ReportModel) View() string {
 		totalStr = "no time tracked"
 	}
 	headerRight := StyleDimmed.Render("total  ") + StyleDuration.Render(totalStr)
-	// Right-align the total in the header line.
+	if showEarnings && grandEarnings > 0 {
+		earningsStyle := lipgloss.NewStyle().Foreground(colorGreen).Bold(true)
+		headerRight += StyleDimmed.Render("   earnings  ") + earningsStyle.Render(fmt.Sprintf("$%.2f", grandEarnings))
+	}
 	titleW := lipgloss.Width("Report")
 	rightW := lipgloss.Width(headerRight)
 	headerPad := innerW - titleW - rightW
@@ -328,8 +343,6 @@ func (m ReportModel) View() string {
 		if t != nil {
 			tName = truncate(t.Name, 20)
 		}
-		// Only add time.Since when the timer is not paused; AccumulatedSeconds
-		// already banks the interval up to the most recent pause.
 		elapsed := at.AccumulatedSeconds
 		if !at.Paused {
 			elapsed += int64(time.Since(at.Start).Seconds())
@@ -348,6 +361,8 @@ func (m ReportModel) View() string {
 	if end > len(m.rows) {
 		end = len(m.rows)
 	}
+
+	earningsStyle := lipgloss.NewStyle().Foreground(colorGreen)
 
 	var body strings.Builder
 
@@ -387,7 +402,17 @@ func (m ReportModel) View() string {
 				barCol := renderBar(secs, grandTotal, barW)
 				durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
 					Render(StyleDuration.Render(util.FormatDuration(secs)))
-				body.WriteString(nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + durCol)
+				line := nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + durCol
+				if showEarnings {
+					earnStr := ""
+					if p.HasRate() {
+						earnStr = fmt.Sprintf("$%.2f", p.Earnings())
+					}
+					earnCol := lipgloss.NewStyle().Width(earnW).Align(lipgloss.Right).
+						Render(earningsStyle.Render(earnStr))
+					line += strings.Repeat(" ", earnGap) + earnCol
+				}
+				body.WriteString(line)
 				body.WriteString("\n")
 
 			case reportRowTask:
@@ -404,7 +429,13 @@ func (m ReportModel) View() string {
 				barCol := renderBar(secs, p.TotalSeconds(), barW)
 				durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
 					Render(StyleDuration.Render(util.FormatDuration(secs)))
-				body.WriteString(nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + durCol)
+				line := nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + durCol
+				if showEarnings {
+					// blank earnings cell for task rows — rate is per project
+					earnCol := lipgloss.NewStyle().Width(earnW).Render("")
+					line += strings.Repeat(" ", earnGap) + earnCol
+				}
+				body.WriteString(line)
 				body.WriteString("\n")
 
 			case reportRowSessionNote:

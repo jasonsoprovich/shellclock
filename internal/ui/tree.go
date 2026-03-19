@@ -35,6 +35,7 @@ const (
 	inputRename              // renaming an existing project or task
 	inputTags                // editing comma-separated tags for a project
 	inputIdleWarn            // setting idle-warn threshold (minutes; 0 = disable)
+	inputRate                // setting hourly rate for a project (0 or blank = clear)
 )
 
 // treeItem is one visible row in the flattened tree.
@@ -58,10 +59,11 @@ type TreeModel struct {
 	expanded map[string]bool // set of expanded project IDs
 
 	// text-input state
-	mode         inputMode
-	textInput    textinput.Model
-	parentID     string // project ID when mode == inputTask
-	tagProjectID string // project ID when mode == inputTags
+	mode          inputMode
+	textInput     textinput.Model
+	parentID      string // project ID when mode == inputTask
+	tagProjectID  string // project ID when mode == inputTags
+	rateProjectID string // project ID when mode == inputRate
 
 	// help component
 	help     help.Model
@@ -437,6 +439,21 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 						}
 						_ = m.store.Save()
 					}
+
+				case inputRate:
+					p := m.store.FindProject(m.rateProjectID)
+					if p != nil {
+						if val == "" {
+							p.HourlyRate = 0
+						} else {
+							rate, err := strconv.ParseFloat(val, 64)
+							if err == nil && rate >= 0 {
+								p.HourlyRate = rate
+							}
+						}
+						_ = m.store.Save()
+						m.buildItems()
+					}
 				}
 				m.mode = inputNone
 				m.textInput.Blur()
@@ -665,6 +682,24 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			m.help.ShowAll = m.showFull
 			m.scrollToCursor()
 
+		case "$":
+			if len(m.items) > 0 && m.items[m.cursor].isProject {
+				item := m.items[m.cursor]
+				p := m.store.FindProject(item.projectID)
+				cur := ""
+				if p != nil && p.HourlyRate > 0 {
+					cur = strconv.FormatFloat(p.HourlyRate, 'f', 2, 64)
+				}
+				m.rateProjectID = item.projectID
+				m.mode = inputRate
+				m.textInput.CharLimit = 12
+				m.textInput.Placeholder = "e.g. 75.00"
+				m.textInput.SetValue(cur)
+				m.textInput.CursorEnd()
+				cmd = m.textInput.Focus()
+				return m, cmd
+			}
+
 		case "W":
 			warn := m.store.IdleWarn
 			cur := warn.ThresholdMins
@@ -847,6 +882,8 @@ func (m TreeModel) View() string {
 			label = "Tags"
 		case inputIdleWarn:
 			label = "Idle warn (mins, 0 = disable)"
+		case inputRate:
+			label = "Hourly rate (blank to clear)"
 		}
 		sb.WriteString("\n")
 		sb.WriteString(StyleInputLabel.Render(label+":") + " " + m.textInput.View())

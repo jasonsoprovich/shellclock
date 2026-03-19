@@ -48,10 +48,11 @@ func (t *Task) TotalSeconds() int64 {
 
 // Project is the top-level grouping of tasks.
 type Project struct {
-	ID    string   `json:"id"`
-	Name  string   `json:"name"`
-	Tags  []string `json:"tags,omitempty"`
-	Tasks []Task   `json:"tasks"`
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Tags        []string `json:"tags,omitempty"`
+	HourlyRate  float64  `json:"hourly_rate,omitempty"` // 0 means no rate set
+	Tasks       []Task   `json:"tasks"`
 }
 
 // TotalSeconds returns the sum of all task durations for this project.
@@ -61,6 +62,18 @@ func (p *Project) TotalSeconds() int64 {
 		total += p.Tasks[i].TotalSeconds()
 	}
 	return total
+}
+
+// HasRate reports whether this project has an hourly rate configured.
+func (p *Project) HasRate() bool { return p.HourlyRate > 0 }
+
+// Earnings returns the total earnings for this project based on its hourly
+// rate and total tracked time. Returns 0 if no rate is set.
+func (p *Project) Earnings() float64 {
+	if !p.HasRate() {
+		return 0
+	}
+	return float64(p.TotalSeconds()) / 3600.0 * p.HourlyRate
 }
 
 // ActiveTimer persists an in-progress timer across restarts.
@@ -76,10 +89,11 @@ type ActiveTimer struct {
 
 // Store is the root data structure serialised to disk.
 type Store struct {
-	Projects    []Project        `json:"projects"`
-	ActiveTimer *ActiveTimer     `json:"active_timer,omitempty"`
-	Theme       string           `json:"theme,omitempty"`
-	IdleWarn    IdleWarnSettings `json:"idle_warn"`
+	Projects     []Project        `json:"projects"`
+	ActiveTimer  *ActiveTimer     `json:"active_timer,omitempty"`
+	Theme        string           `json:"theme,omitempty"`
+	IdleWarn     IdleWarnSettings `json:"idle_warn"`
+	ShowEarnings bool             `json:"show_earnings,omitempty"` // display earnings column in report
 
 	path string
 }

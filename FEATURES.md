@@ -83,6 +83,14 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Automatic daily backup** — on every launch, before data is loaded, `model.RunBackup()` copies `shellclock.json` to `~/.config/shellclock/backups/shellclock-YYYY-MM-DD.json`; one backup per calendar day; at most 7 backups retained (oldest pruned automatically); completely silent with no UI interaction required
 - [x] **Backup info overlay** (`B` in tree view) — centered modal over dimmed background listing all available backup files newest-first, and showing the full backup directory path; dismissed by `esc` or any key
 
+### Hourly Rate & Earnings
+
+- [x] **Hourly rate per project** — `Project.HourlyRate float64` field; `omitempty` so zero is omitted from JSON. Set via `$` on a focused project in the tree view (inline prompt, pre-filled with the current rate; blank or 0 clears it).
+- [x] **Earnings column in report** (`$` to toggle) — when `ShowEarnings` is on, a right-aligned `$XX.XX` column appears after the duration column for each project that has a rate. Task rows show blank. The header gains a grand earnings total (`earnings  $NNN.NN`). The toggle is persisted under `"show_earnings"` in the data file; off by default.
+- [x] **CSV export** — always includes `Hourly Rate` and `Earnings` columns (session-level: each session's earnings = `session_seconds / 3600 × rate`). Cells are empty when no rate is set. Toggle has no effect on exports.
+- [x] **Text export** — project lines include `$XX.XX` when a rate is set.
+- [x] No currency conversion — earnings = hours × rate.
+
 ### Idle Timer Warning
 
 - [x] **Idle warning indicator** — when a timer has been running (not paused) past the configured threshold, a flashing `⚠ Nh+` badge appears next to the timer badge in both the tree view and task detail view. The indicator alternates on/off every second using the existing tick chain. No automatic action is taken — it is purely visual.

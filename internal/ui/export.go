@@ -40,13 +40,21 @@ func exportCSV(store *model.Store) (string, error) {
 	defer f.Close()
 
 	w := csv.NewWriter(f)
-	_ = w.Write([]string{"Project", "Task", "Start", "End", "Duration (h:mm:ss)", "Notes"})
+	_ = w.Write([]string{"Project", "Task", "Start", "End", "Duration (h:mm:ss)", "Notes", "Hourly Rate", "Earnings"})
 	for _, p := range store.Projects {
+		rateStr := ""
+		if p.HasRate() {
+			rateStr = fmt.Sprintf("%.2f", p.HourlyRate)
+		}
 		for _, t := range p.Tasks {
 			for _, sess := range t.Sessions {
 				endStr := ""
 				if !sess.End.IsZero() {
 					endStr = sess.End.Format("2006-01-02 15:04:05")
+				}
+				sessEarnings := ""
+				if p.HasRate() {
+					sessEarnings = fmt.Sprintf("%.2f", float64(sess.DurationSeconds)/3600.0*p.HourlyRate)
 				}
 				_ = w.Write([]string{
 					p.Name,
@@ -55,6 +63,8 @@ func exportCSV(store *model.Store) (string, error) {
 					endStr,
 					util.FormatDurationShort(sess.DurationSeconds),
 					sess.Notes,
+					rateStr,
+					sessEarnings,
 				})
 			}
 		}
@@ -85,7 +95,11 @@ func exportText(store *model.Store) (string, error) {
 	sb.WriteString(strings.Repeat("─", 50) + "\n\n")
 
 	for _, p := range store.Projects {
-		sb.WriteString(fmt.Sprintf("▸ %s  %s\n", p.Name, util.FormatDuration(p.TotalSeconds())))
+		projLine := fmt.Sprintf("▸ %s  %s", p.Name, util.FormatDuration(p.TotalSeconds()))
+		if p.HasRate() {
+			projLine += fmt.Sprintf("  $%.2f", p.Earnings())
+		}
+		sb.WriteString(projLine + "\n")
 		for _, t := range p.Tasks {
 			noun := "sessions"
 			if len(t.Sessions) == 1 {
