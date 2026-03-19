@@ -75,6 +75,10 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Filter indicator in report header** — when a tag filter is active, a pill + `[f] change or clear` line appears below the separator
 - [x] **Filtered totals** — grand total in report header reflects only the filtered projects
 
+### Import
+
+- [x] **Toggl CSV import** (`shellclock import toggl /path/to/export.csv`) — CLI subcommand (no TUI); reads a Toggl CSV export and merges it into the shellclock data file. Column mapping: Toggl **Project** → shellclock Project; Toggl **Task** (falling back to **Description**) → shellclock Task; each row → Session with correct start/end timestamps and duration. Projects and tasks matched by name — existing ones are reused and sessions appended, never duplicated. If Description differs from the task name it is stored as session notes (truncated to 120 chars). Prints `X projects imported, Y tasks imported, Z sessions imported` on success.
+
 ### Backup
 - [x] **Automatic daily backup** — on every launch, before data is loaded, `model.RunBackup()` copies `shellclock.json` to `~/.config/shellclock/backups/shellclock-YYYY-MM-DD.json`; one backup per calendar day; at most 7 backups retained (oldest pruned automatically); completely silent with no UI interaction required
 - [x] **Backup info overlay** (`B` in tree view) — centered modal over dimmed background listing all available backup files newest-first, and showing the full backup directory path; dismissed by `esc` or any key

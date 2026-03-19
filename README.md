@@ -67,6 +67,39 @@ Launch shellclock:
 shellclock
 ```
 
+### Importing from Toggl
+
+shellclock can import a Toggl **Detailed** CSV export directly from the command line — no need to open the TUI.
+
+```bash
+shellclock import toggl /path/to/export.csv
+```
+
+To get the right file from Toggl:
+1. Open Toggl Track → **Reports** → **Detailed**
+2. Set your date range
+3. Click **Export** → **Download as CSV**
+
+On success, shellclock prints a summary and exits:
+
+```
+3 projects imported, 4 tasks imported, 20 sessions imported
+```
+
+**How data is mapped:**
+
+| Toggl column | shellclock |
+|---|---|
+| Project | Project (created if new, reused if name matches) |
+| Task | Task name (falls back to Description if blank) |
+| Description | Task name (if Task is blank); otherwise stored as session notes |
+| Start date + Start time | Session start |
+| End date + End time | Session end |
+
+Sessions are always appended — existing projects and tasks are matched by name, never duplicated.
+
+---
+
 ### Views
 
 shellclock has four views, each accessible from the main tree.
@@ -209,10 +242,12 @@ Browse and preview all 31 built-in themes. Themes update live as you navigate.
 
 ```
 shellclock/
-├── main.go                  # Entry point
+├── main.go                  # Entry point; routes import subcommand or launches TUI
 ├── internal/
 │   ├── model/
 │   │   └── model.go         # Data types and JSON persistence
+│   ├── importer/
+│   │   └── toggl.go         # Toggl CSV import logic
 │   ├── ui/
 │   │   ├── app.go           # Root Bubble Tea model, view routing, tick chain
 │   │   ├── tree.go          # Project/task tree view (live timer overview)
