@@ -66,6 +66,15 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Theme persistence** — selected theme name stored in JSON; restored on next launch
 - [x] **Colour swatches** — each theme row shows 7 representative colour squares in its own colours
 
+### Project Tags
+- [x] **Tags data model** — `Project` struct has `Tags []string` field; persisted in JSON as `"tags": [...]`, omitted when empty; `UpdateProjectTags()` store helper
+- [x] **Tag entry in create/rename flow** — after confirming a project name (new project `N` or rename `E`), a second inline prompt appears for comma-separated tags; `enter` saves (empty clears tags), `esc` cancels
+- [x] **Direct tag edit** (`#` on project) — opens the tag edit prompt pre-filled with existing tags; works any time a project is focused in the tree view
+- [x] **Tag pills in tree view** — tags render as small teal pill badges (colored background, bold text) next to the project name; selected rows show tags as `[tag1, tag2]` inside the highlight
+- [x] **Tag filter in report view** (`f`) — opens a centered modal tag picker listing all unique tags; `↑`/`↓` navigate, `enter` applies the selected tag as a filter, `(show all)` clears it; active filter shown with `✓` marker; `esc`/`f` closes without changing the filter
+- [x] **Filter indicator in report header** — when a tag filter is active, a pill + `[f] change or clear` line appears below the separator
+- [x] **Filtered totals** — grand total in report header reflects only the filtered projects
+
 ### Backup
 - [x] **Automatic daily backup** — on every launch, before data is loaded, `model.RunBackup()` copies `shellclock.json` to `~/.config/shellclock/backups/shellclock-YYYY-MM-DD.json`; one backup per calendar day; at most 7 backups retained (oldest pruned automatically); completely silent with no UI interaction required
 - [x] **Backup info overlay** (`B` in tree view) — centered modal over dimmed background listing all available backup files newest-first, and showing the full backup directory path; dismissed by `esc` or any key

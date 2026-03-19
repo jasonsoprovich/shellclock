@@ -17,12 +17,14 @@ type KeyMap struct {
 	Delete       key.Binding
 	Edit         key.Binding
 	Rename       key.Binding
+	EditTags     key.Binding
 	Start        key.Binding
 	Stop         key.Binding
 	Reset        key.Binding
 	Report       key.Binding
 	ThemePicker  key.Binding
 	Export       key.Binding
+	Filter       key.Binding
 	BackupInfo   key.Binding
 	Quit         key.Binding
 	Help         key.Binding
@@ -42,12 +44,14 @@ func DefaultKeyMap() KeyMap {
 		Delete:      key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
 		Edit:        key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit sessions")),
 		Rename:      key.NewBinding(key.WithKeys("E"), key.WithHelp("E", "rename")),
+		EditTags:    key.NewBinding(key.WithKeys("#"), key.WithHelp("#", "edit tags")),
 		Start:       key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "start/pause/resume")),
 		Stop:        key.NewBinding(key.WithKeys("S"), key.WithHelp("S", "stop & save")),
 		Reset:       key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reset")),
 		Report:      key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "report")),
 		ThemePicker: key.NewBinding(key.WithKeys("T"), key.WithHelp("T", "theme")),
 		Export:      key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "export")),
+		Filter:      key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "filter by tag")),
 		BackupInfo:  key.NewBinding(key.WithKeys("B"), key.WithHelp("B", "backups")),
 		Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 		Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more keys")),
@@ -72,7 +76,7 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 		{k.km.Up, k.km.Down, k.km.Left, k.km.Right},
 		{k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete},
 		{k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker},
-		{k.km.Start, k.km.Stop, k.km.Reset},
+		{k.km.Start, k.km.Stop, k.km.Reset, k.km.EditTags},
 		{k.km.BackupInfo, k.km.Quit, k.km.Help},
 	}
 }
@@ -82,13 +86,13 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 type reportKeyMap struct{ km KeyMap }
 
 func (k reportKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.km.Up, k.km.Down, k.km.Export, k.km.Esc, k.km.Help}
+	return []key.Binding{k.km.Up, k.km.Down, k.km.Filter, k.km.Export, k.km.Esc, k.km.Help}
 }
 
 func (k reportKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.km.Up, k.km.Down},
-		{k.km.Export, k.km.Esc, k.km.Help},
+		{k.km.Filter, k.km.Export, k.km.Esc, k.km.Help},
 	}
 }
 

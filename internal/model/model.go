@@ -37,9 +37,10 @@ func (t *Task) TotalSeconds() int64 {
 
 // Project is the top-level grouping of tasks.
 type Project struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Tasks []Task `json:"tasks"`
+	ID    string   `json:"id"`
+	Name  string   `json:"name"`
+	Tags  []string `json:"tags,omitempty"`
+	Tasks []Task   `json:"tasks"`
 }
 
 // TotalSeconds returns the sum of all task durations for this project.
@@ -153,6 +154,13 @@ func (s *Store) RenameProject(id, name string) {
 	p := s.FindProject(id)
 	if p != nil {
 		p.Name = name
+	}
+}
+
+func (s *Store) UpdateProjectTags(id string, tags []string) {
+	p := s.FindProject(id)
+	if p != nil {
+		p.Tags = tags
 	}
 }
 

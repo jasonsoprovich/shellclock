@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -48,6 +49,12 @@ type ReportModel struct {
 	exportMenu bool   // export format selection overlay is open
 	exportMsg  string // brief confirmation shown after a successful export
 
+	// tag filter
+	tagFilter    string   // empty = no filter; else show only projects with this tag
+	tagPicker    bool     // tag picker overlay is open
+	tagPickerIdx int      // 0 = "(show all)", 1+ = allTags[i-1]
+	allTags      []string // sorted unique tags across all projects
+
 	SwitchToTree bool
 }
 
@@ -55,13 +62,42 @@ func NewReportModel(store *model.Store, keys KeyMap) ReportModel {
 	h := help.New()
 	h.Styles = helpStyles()
 	m := ReportModel{store: store, keys: keys, help: h}
+	m.buildAllTags()
 	m.buildRows()
 	return m
+}
+
+// buildAllTags collects all unique tags from all projects, sorted.
+func (m *ReportModel) buildAllTags() {
+	seen := map[string]bool{}
+	for _, p := range m.store.Projects {
+		for _, tag := range p.Tags {
+			seen[tag] = true
+		}
+	}
+	tags := make([]string, 0, len(seen))
+	for t := range seen {
+		tags = append(tags, t)
+	}
+	sort.Strings(tags)
+	m.allTags = tags
+}
+
+func projectHasTag(p model.Project, tag string) bool {
+	for _, t := range p.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *ReportModel) buildRows() {
 	m.rows = nil
 	for _, p := range m.store.Projects {
+		if m.tagFilter != "" && !projectHasTag(p, m.tagFilter) {
+			continue
+		}
 		m.rows = append(m.rows, reportRow{kind: reportRowProject, projectID: p.ID})
 		for _, t := range p.Tasks {
 			m.rows = append(m.rows, reportRow{kind: reportRowTask, projectID: p.ID, taskID: t.ID})
@@ -98,6 +134,9 @@ func (m *ReportModel) listHeight() int {
 	if m.store.ActiveTimer != nil {
 		fixed++ // timer notice line is always written when timer is active
 	}
+	if m.tagFilter != "" {
+		fixed++ // filter indicator line
+	}
 	if m.showFull {
 		fixed += 3
 	}
@@ -132,6 +171,30 @@ func (m ReportModel) Update(msg tea.Msg) (ReportModel, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		if m.tagPicker {
+			switch msg.String() {
+			case "up", "k":
+				if m.tagPickerIdx > 0 {
+					m.tagPickerIdx--
+				}
+			case "down", "j":
+				if m.tagPickerIdx < len(m.allTags) {
+					m.tagPickerIdx++
+				}
+			case "enter":
+				if m.tagPickerIdx == 0 {
+					m.tagFilter = ""
+				} else {
+					m.tagFilter = m.allTags[m.tagPickerIdx-1]
+				}
+				m.tagPicker = false
+				m.offset = 0
+				m.buildRows()
+			case "esc", "f":
+				m.tagPicker = false
+			}
+			return m, nil
+		}
 		if m.exportMenu {
 			switch msg.String() {
 			case "c":
@@ -166,6 +229,17 @@ func (m ReportModel) Update(msg tea.Msg) (ReportModel, tea.Cmd) {
 			m.scrollDown()
 		case "x":
 			m.exportMenu = true
+		case "f":
+			if len(m.allTags) > 0 {
+				m.tagPicker = true
+				m.tagPickerIdx = 0
+				for i, t := range m.allTags {
+					if t == m.tagFilter {
+						m.tagPickerIdx = i + 1
+						break
+					}
+				}
+			}
 		case "?":
 			m.showFull = !m.showFull
 			m.help.ShowAll = m.showFull
@@ -198,9 +272,12 @@ func (m ReportModel) View() string {
 		nameW = 10
 	}
 
-	// Compute grand total across all committed sessions.
+	// Compute grand total (respects active tag filter).
 	var grandTotal int64
 	for i := range m.store.Projects {
+		if m.tagFilter != "" && !projectHasTag(m.store.Projects[i], m.tagFilter) {
+			continue
+		}
 		grandTotal += m.store.Projects[i].TotalSeconds()
 	}
 
@@ -226,6 +303,17 @@ func (m ReportModel) View() string {
 	header.WriteString("\n")
 	header.WriteString(StyleDimmed.Render(strings.Repeat("─", innerW)))
 	header.WriteString("\n")
+
+	// Filter indicator — always written as a line when filter is active so
+	// listHeight() can safely add 1 to fixed when tagFilter != "".
+	if m.tagFilter != "" {
+		header.WriteString(
+			StyleDimmed.Render("filter: ") +
+				renderTagPill(m.tagFilter) +
+				StyleDimmed.Render("  [f] change or clear") +
+				"\n",
+		)
+	}
 
 	// Active-timer notice — always written as a line when timer is active so
 	// listHeight() can safely add 1 to fixed when store.ActiveTimer != nil.
@@ -370,7 +458,11 @@ func (m ReportModel) View() string {
 	sb.WriteString("\n")
 	sb.WriteString(helpStr)
 
-	return StylePanel.Width(innerW + 2).Padding(0, 1).Render(sb.String())
+	base := StylePanel.Width(innerW + 2).Padding(0, 1).Render(sb.String())
+	if m.tagPicker {
+		return renderTagPickerOverlay(base, m.allTags, m.tagPickerIdx, m.tagFilter, m.width, m.height)
+	}
+	return base
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

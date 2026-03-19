@@ -32,6 +32,7 @@ const (
 	inputProject           // naming a new project
 	inputTask              // naming a new task
 	inputRename            // renaming an existing project or task
+	inputTags              // editing comma-separated tags for a project
 )
 
 // treeItem is one visible row in the flattened tree.
@@ -55,9 +56,10 @@ type TreeModel struct {
 	expanded map[string]bool // set of expanded project IDs
 
 	// text-input state
-	mode      inputMode
-	textInput textinput.Model
-	parentID  string // project ID when mode == inputTask
+	mode         inputMode
+	textInput    textinput.Model
+	parentID     string // project ID when mode == inputTask
+	tagProjectID string // project ID when mode == inputTags
 
 	// help component
 	help     help.Model
@@ -255,11 +257,11 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 		if m.mode != inputNone {
 			switch msg.Type {
 			case tea.KeyEnter:
-				name := strings.TrimSpace(m.textInput.Value())
-				if name != "" {
-					switch m.mode {
-					case inputProject:
-						p := m.store.AddProject(name)
+				val := strings.TrimSpace(m.textInput.Value())
+				switch m.mode {
+				case inputProject:
+					if val != "" {
+						p := m.store.AddProject(val)
 						_ = m.store.Save()
 						m.expanded[p.ID] = true
 						m.buildItems()
@@ -269,8 +271,17 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 								break
 							}
 						}
-					case inputTask:
-						t := m.store.AddTask(m.parentID, name)
+						// Transition to tag input for the new project.
+						m.tagProjectID = p.ID
+						m.mode = inputTags
+						m.textInput.Placeholder = "Tags (comma-separated)…"
+						m.textInput.SetValue("")
+						cmd = m.textInput.Focus()
+						return m, cmd
+					}
+				case inputTask:
+					if val != "" {
+						t := m.store.AddTask(m.parentID, val)
 						_ = m.store.Save()
 						m.expanded[m.parentID] = true
 						m.buildItems()
@@ -282,16 +293,44 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 								}
 							}
 						}
-					case inputRename:
+					}
+				case inputRename:
+					if val != "" {
 						item := m.items[m.cursor]
 						if item.isProject {
-							m.store.RenameProject(item.projectID, name)
-						} else {
-							m.store.RenameTask(item.projectID, item.taskID, name)
+							m.store.RenameProject(item.projectID, val)
+							_ = m.store.Save()
+							m.buildItems()
+							// Transition to tag input for the renamed project.
+							p := m.store.FindProject(item.projectID)
+							currentTags := ""
+							if p != nil && len(p.Tags) > 0 {
+								currentTags = strings.Join(p.Tags, ", ")
+							}
+							m.tagProjectID = item.projectID
+							m.mode = inputTags
+							m.textInput.Placeholder = "Tags (comma-separated)…"
+							m.textInput.SetValue(currentTags)
+							m.textInput.CursorEnd()
+							cmd = m.textInput.Focus()
+							return m, cmd
 						}
+						m.store.RenameTask(item.projectID, item.taskID, val)
 						_ = m.store.Save()
 						m.buildItems()
 					}
+				case inputTags:
+					// Allow empty value to clear all tags.
+					var tags []string
+					for _, t := range strings.Split(val, ",") {
+						t = strings.TrimSpace(t)
+						if t != "" {
+							tags = append(tags, t)
+						}
+					}
+					m.store.UpdateProjectTags(m.tagProjectID, tags)
+					_ = m.store.Save()
+					m.buildItems()
 				}
 				m.mode = inputNone
 				m.textInput.Blur()
@@ -469,6 +508,23 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			m.textInput.CursorEnd()
 			cmd = m.textInput.Focus()
 			return m, cmd
+
+		case "#":
+			if len(m.items) > 0 && m.items[m.cursor].isProject {
+				item := m.items[m.cursor]
+				p := m.store.FindProject(item.projectID)
+				currentTags := ""
+				if p != nil && len(p.Tags) > 0 {
+					currentTags = strings.Join(p.Tags, ", ")
+				}
+				m.tagProjectID = item.projectID
+				m.mode = inputTags
+				m.textInput.Placeholder = "Tags (comma-separated)…"
+				m.textInput.SetValue(currentTags)
+				m.textInput.CursorEnd()
+				cmd = m.textInput.Focus()
+				return m, cmd
+			}
 
 		case "e":
 			if len(m.items) == 0 {
@@ -648,6 +704,8 @@ func (m TreeModel) View() string {
 			label = "New task"
 		case inputRename:
 			label = "Rename"
+		case inputTags:
+			label = "Tags"
 		}
 		sb.WriteString("\n")
 		sb.WriteString(StyleInputLabel.Render(label+":") + " " + m.textInput.View())
@@ -695,9 +753,20 @@ func (m TreeModel) renderItem(i, innerW int) string {
 			durText = "  " + util.FormatDuration(p.TotalSeconds())
 		}
 		if selected {
-			return highlightRow(nameText+durText, innerW)
+			tagText := ""
+			if p != nil && len(p.Tags) > 0 {
+				tagText = "  [" + strings.Join(p.Tags, ", ") + "]"
+			}
+			return highlightRow(nameText+tagText+durText, innerW)
 		}
-		return StyleProject.Render(nameText) + StyleDuration.Render(durText)
+		line := StyleProject.Render(nameText)
+		if p != nil {
+			for _, tag := range p.Tags {
+				line += " " + renderTagPill(tag)
+			}
+		}
+		line += StyleDuration.Render(durText)
+		return line
 	}
 
 	// Task row

@@ -66,6 +66,17 @@ var (
 			Foreground(colorMauve)
 )
 
+// renderTagPill renders a tag as a small colored pill using the current theme's
+// teal color. Called from tree.go and tagpicker_overlay.go.
+func renderTagPill(tag string) string {
+	return lipgloss.NewStyle().
+		Foreground(colorBase).
+		Background(colorTeal).
+		Padding(0, 1).
+		Bold(true).
+		Render(tag)
+}
+
 // helpStyles returns help.Styles built from the current palette variables.
 // Called inside every View() so theme changes take effect on the next render
 // without needing to store styles in the model.
