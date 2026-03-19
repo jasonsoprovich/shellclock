@@ -28,6 +28,7 @@ type KeyMap struct {
 	BackupInfo   key.Binding
 	Quit         key.Binding
 	Help         key.Binding
+	HelpScreen   key.Binding
 }
 
 // DefaultKeyMap returns the default keybindings.
@@ -55,6 +56,7 @@ func DefaultKeyMap() KeyMap {
 		BackupInfo:  key.NewBinding(key.WithKeys("B"), key.WithHelp("B", "backups")),
 		Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 		Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more keys")),
+		HelpScreen:  key.NewBinding(key.WithKeys("H"), key.WithHelp("H", "help")),
 	}
 }
 
@@ -67,7 +69,7 @@ func (k treeKeyMap) ShortHelp() []key.Binding {
 		k.km.Up, k.km.Down,
 		k.km.NewProject, k.km.NewTask,
 		k.km.Enter, k.km.Delete,
-		k.km.Report, k.km.Quit, k.km.Help,
+		k.km.Report, k.km.Quit, k.km.HelpScreen, k.km.Help,
 	}
 }
 
@@ -77,7 +79,7 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 		{k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete},
 		{k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker},
 		{k.km.Start, k.km.Stop, k.km.Reset, k.km.EditTags},
-		{k.km.BackupInfo, k.km.Quit, k.km.Help},
+		{k.km.BackupInfo, k.km.HelpScreen, k.km.Quit, k.km.Help},
 	}
 }
 

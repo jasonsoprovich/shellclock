@@ -13,6 +13,8 @@ Built with the [Charm](https://charm.sh) stack: Bubble Tea, Lip Gloss, and Bubbl
 - **Session Editor** — view all recorded sessions for a task; add, edit, or delete individual sessions with second-level precision
 - **Report View** — visual summary with progress bars showing time distribution across all projects and tasks
 - **Theme System** — 31 built-in themes (Catppuccin family, Dracula, Nord, Tokyo Night, Gruvbox, Rosé Pine, and more); live preview in the picker; selection persists across launches
+- **In-app Help** — press `H` from anywhere to open a full scrollable reference covering every key, view, and CLI command
+- **Toggl Import** — import a Toggl Detailed CSV export from the command line without opening the TUI
 - **Keyboard-driven** — vim-style navigation throughout; context-sensitive help bar always visible
 - **No external dependencies** — single JSON file, no database, no network
 
@@ -102,7 +104,7 @@ Sessions are always appended — existing projects and tasks are matched by name
 
 ### Views
 
-shellclock has four views, each accessible from the main tree.
+shellclock has five views, each accessible from the main tree. Press `H` from any view to open the full in-app help reference.
 
 ---
 
@@ -127,8 +129,10 @@ The collapsible project/task list. When a timer is running, the active task and 
 | `r` | Reset active timer |
 | `R` | Open report view |
 | `T` | Open theme picker |
+| `B` | Show backup info |
+| `H` | Open help screen |
 | `q` | Quit |
-| `?` | Toggle full key list |
+| `?` | Toggle compact key reference bar |
 
 The active task row in the tree always shows the live elapsed time (`● 00:05:32` or `⏸ 00:05:32` when paused).
 
@@ -238,6 +242,18 @@ Browse and preview all 31 built-in themes. Themes update live as you navigate.
 
 ---
 
+### Help Screen
+
+Press `H` from **any view** to open the full in-app help reference. It covers every keybinding organized by view, backup details, CLI commands, and the Toggl import workflow.
+
+| Key | Action |
+|-----|--------|
+| `↑` / `k` | Scroll up |
+| `↓` / `j` | Scroll down |
+| `esc` / `q` | Close and return to tree |
+
+---
+
 ## Project structure
 
 ```
@@ -255,6 +271,7 @@ shellclock/
 │   │   ├── report.go        # Summary report view
 │   │   ├── edit.go          # Dedicated session editor view
 │   │   ├── themepicker.go   # Theme selection view
+│   │   ├── help.go          # Full-screen help reference view
 │   │   ├── themes.go        # Theme definitions and ApplyTheme()
 │   │   ├── styles.go        # Global style variables
 │   │   └── keys.go          # Keybinding definitions

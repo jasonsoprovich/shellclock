@@ -17,6 +17,7 @@ const (
 	viewReport
 	viewEdit
 	viewThemePicker
+	viewHelp
 )
 
 // tickMsg is sent every second to drive the live timer display.
@@ -39,6 +40,7 @@ type App struct {
 	report ReportModel
 	edit   EditModel
 	picker ThemePickerModel
+	help   HelpModel
 
 	width  int
 	height int
@@ -61,6 +63,7 @@ func New(store *model.Store) App {
 		report:  NewReportModel(store, keys),
 		edit:    NewEditModel(store, keys),
 		picker:  NewThemePickerModel(store, keys),
+		help:    NewHelpModel(keys),
 	}
 }
 
@@ -87,6 +90,16 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.report, _ = a.report.Update(ws)
 		a.edit, _ = a.edit.Update(ws)
 		a.picker, _ = a.picker.Update(ws)
+		a.help, _ = a.help.Update(ws)
+		return a, nil
+	}
+
+	// H opens the help screen from any view.
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "H" {
+		a.help = NewHelpModel(a.keys)
+		a.help.width = a.width
+		a.help.height = a.height
+		a.current = viewHelp
 		return a, nil
 	}
 
@@ -190,6 +203,17 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.picker.SwitchToTree = false
 			a.current = viewTree
 		}
+
+	// ── Help screen ───────────────────────────────────────────────────────────
+	case viewHelp:
+		var c tea.Cmd
+		a.help, c = a.help.Update(msg)
+		cmds = append(cmds, c)
+
+		if a.help.SwitchToTree {
+			a.help.SwitchToTree = false
+			a.current = viewTree
+		}
 	}
 
 	return a, tea.Batch(cmds...)
@@ -205,6 +229,8 @@ func (a App) View() string {
 		return a.edit.View()
 	case viewThemePicker:
 		return a.picker.View()
+	case viewHelp:
+		return a.help.View()
 	default:
 		return a.tree.View()
 	}
