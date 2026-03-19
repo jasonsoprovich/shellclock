@@ -26,12 +26,13 @@ const (
 	editModeEdit               // editing an existing session's times
 )
 
-// editField tracks which of the two inputs is focused.
+// editField tracks which of the three inputs is focused.
 type editField int
 
 const (
 	fieldStart editField = iota
 	fieldEnd
+	fieldNote
 )
 
 // Session list column visible widths.
@@ -63,6 +64,7 @@ type EditModel struct {
 	activeField editField
 	startInput  textinput.Model
 	endInput    textinput.Model
+	noteInput   textinput.Model
 	errMsg      string
 	editingID   string // session ID being edited (editModeEdit only)
 
@@ -89,6 +91,13 @@ func NewEditModel(store *model.Store, keys KeyMap) EditModel {
 	ei.PromptStyle = StyleInputLabel
 	ei.TextStyle = StyleTask
 
+	ni := textinput.New()
+	ni.CharLimit = 120
+	ni.Placeholder = "optional note (max 120 chars)"
+	ni.PlaceholderStyle = StyleDimmed
+	ni.PromptStyle = StyleInputLabel
+	ni.TextStyle = StyleTask
+
 	h := help.New()
 	h.Styles = helpStyles()
 
@@ -97,6 +106,7 @@ func NewEditModel(store *model.Store, keys KeyMap) EditModel {
 		keys:       keys,
 		startInput: si,
 		endInput:   ei,
+		noteInput:  ni,
 		help:       h,
 	}
 }
@@ -132,7 +142,7 @@ func (m *EditModel) listHeight() int {
 	}
 	fixed := 11
 	if m.inputMode != editModeNone {
-		fixed += 5 // blank + label + start + end + error
+		fixed += 6 // blank + label + start + end + note + error
 	}
 	if m.showFull {
 		fixed += 3
@@ -191,6 +201,7 @@ func (m *EditModel) commitForm() {
 	}
 
 	secs := int64(end.Sub(start).Seconds())
+	note := strings.TrimSpace(m.noteInput.Value())
 
 	switch m.inputMode {
 	case editModeAdd:
@@ -199,6 +210,7 @@ func (m *EditModel) commitForm() {
 			Start:           start,
 			End:             end,
 			DurationSeconds: secs,
+			Notes:           note,
 		})
 	case editModeEdit:
 		m.store.UpdateSession(m.ProjectID, m.TaskID, model.Session{
@@ -206,6 +218,7 @@ func (m *EditModel) commitForm() {
 			Start:           start,
 			End:             end,
 			DurationSeconds: secs,
+			Notes:           note,
 		})
 	}
 	_ = m.store.Save()
@@ -218,8 +231,10 @@ func (m *EditModel) closeForm() {
 	m.editingID = ""
 	m.startInput.Blur()
 	m.endInput.Blur()
+	m.noteInput.Blur()
 	m.startInput.SetValue("")
 	m.endInput.SetValue("")
+	m.noteInput.SetValue("")
 	m.clampCursor()
 	m.scrollToCursor()
 }
@@ -233,6 +248,7 @@ func (m *EditModel) openAdd() tea.Cmd {
 	m.activeField = fieldStart
 	m.startInput.SetValue(now.Format(timeFmt))
 	m.endInput.SetValue(now.Format(timeFmt))
+	m.noteInput.SetValue("")
 	m.startInput.CursorEnd()
 	return m.startInput.Focus()
 }
@@ -250,6 +266,7 @@ func (m *EditModel) openEdit(sess model.Session) tea.Cmd {
 		endVal = sess.End.Format(timeFmt)
 	}
 	m.endInput.SetValue(endVal)
+	m.noteInput.SetValue(sess.Notes)
 	m.startInput.CursorEnd()
 	return m.startInput.Focus()
 }
@@ -275,37 +292,71 @@ func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 			m.closeForm()
 			return m, nil
 
-		case tea.KeyTab, tea.KeyShiftTab:
-			// Toggle between start and end fields.
-			if m.activeField == fieldStart {
+		case tea.KeyTab:
+			// Cycle forward: start → end → note → start.
+			switch m.activeField {
+			case fieldStart:
 				m.activeField = fieldEnd
 				m.startInput.Blur()
 				cmd = m.endInput.Focus()
-			} else {
-				m.activeField = fieldStart
+			case fieldEnd:
+				m.activeField = fieldNote
 				m.endInput.Blur()
+				cmd = m.noteInput.Focus()
+			case fieldNote:
+				m.activeField = fieldStart
+				m.noteInput.Blur()
 				cmd = m.startInput.Focus()
 			}
 			return m, cmd
 
+		case tea.KeyShiftTab:
+			// Cycle backward: start → note → end → start.
+			switch m.activeField {
+			case fieldStart:
+				m.activeField = fieldNote
+				m.startInput.Blur()
+				cmd = m.noteInput.Focus()
+			case fieldEnd:
+				m.activeField = fieldStart
+				m.endInput.Blur()
+				cmd = m.startInput.Focus()
+			case fieldNote:
+				m.activeField = fieldEnd
+				m.noteInput.Blur()
+				cmd = m.endInput.Focus()
+			}
+			return m, cmd
+
 		case tea.KeyEnter:
-			if m.activeField == fieldStart {
-				// Advance to end field on Enter in start.
+			switch m.activeField {
+			case fieldStart:
+				// Advance to end field.
 				m.activeField = fieldEnd
 				m.startInput.Blur()
 				cmd = m.endInput.Focus()
 				return m, cmd
+			case fieldEnd:
+				// Advance to note field.
+				m.activeField = fieldNote
+				m.endInput.Blur()
+				cmd = m.noteInput.Focus()
+				return m, cmd
+			case fieldNote:
+				// Enter in note field commits.
+				m.commitForm()
+				return m, nil
 			}
-			// Enter in end field commits.
-			m.commitForm()
-			return m, nil
 		}
 
 		// Route keystrokes to the focused input; clear any stale error.
-		if m.activeField == fieldStart {
+		switch m.activeField {
+		case fieldStart:
 			m.startInput, cmd = m.startInput.Update(msg)
-		} else {
+		case fieldEnd:
 			m.endInput, cmd = m.endInput.Update(msg)
+		case fieldNote:
+			m.noteInput, cmd = m.noteInput.Update(msg)
 		}
 		m.errMsg = ""
 		return m, cmd
@@ -492,8 +543,8 @@ func (m EditModel) View() string {
 	sb.WriteString("\n")
 
 	// ── Input form ──────────────────────────────────────────────────────────
-	// The form occupies exactly 5 lines (blank + label + start + end + error)
-	// so listHeight() can add a fixed +5 when inputMode != None.
+	// The form occupies exactly 6 lines (blank + label + start + end + note + error)
+	// so listHeight() can add a fixed +6 when inputMode != None.
 	if m.inputMode != editModeNone {
 		sb.WriteString("\n")
 		label := "Add session"
@@ -503,16 +554,24 @@ func (m EditModel) View() string {
 		sb.WriteString(StyleInputLabel.Render(label))
 		sb.WriteString("\n")
 
-		var startPrompt, endPrompt string
-		if m.activeField == fieldStart {
+		var startPrompt, endPrompt, notePrompt string
+		switch m.activeField {
+		case fieldStart:
 			startPrompt = StyleTimer.Render("▸") + StyleDimmed.Render(" start: ")
 			endPrompt = StyleDimmed.Render("  end:   ")
-		} else {
+			notePrompt = StyleDimmed.Render("  note:  ")
+		case fieldEnd:
 			startPrompt = StyleDimmed.Render("  start: ")
 			endPrompt = StyleTimer.Render("▸") + StyleDimmed.Render(" end:   ")
+			notePrompt = StyleDimmed.Render("  note:  ")
+		case fieldNote:
+			startPrompt = StyleDimmed.Render("  start: ")
+			endPrompt = StyleDimmed.Render("  end:   ")
+			notePrompt = StyleTimer.Render("▸") + StyleDimmed.Render(" note:  ")
 		}
 		sb.WriteString(startPrompt + m.startInput.View() + "\n")
 		sb.WriteString(endPrompt + m.endInput.View() + "\n")
+		sb.WriteString(notePrompt + m.noteInput.View() + "\n")
 
 		// Error line is always written (blank when no error) to keep layout stable.
 		errLine := ""

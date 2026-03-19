@@ -41,17 +41,19 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 - [x] **Progress bars** — proportional `█░` bars; project bars relative to grand total, task bars relative to parent project
 - [x] **Grand total** — shown right-aligned in the header
 - [x] **Active timer notice** — running timer's elapsed time shown at top of report (not yet committed to totals)
+- [x] **Session notes in report** — sessions with notes show a dimmed `↳ note` line beneath the task row
 - [x] **Scrollable list** — scroll hints appear when content overflows
 - [x] **Correct column alignment at any width** — bar/duration columns stay aligned on window resize
-- [x] **Report export** (`x`) — inline menu to choose CSV or plain text; file saved to `~/.config/shellclock/reports/shellclock-report-YYYY-MM-DD.csv` / `.txt` (directory auto-created); CSV columns: Project, Task, Total Duration (h:mm:ss), Total Sessions; plain text mirrors the report view layout; confirmation message shows the full path after successful save
+- [x] **Report export** (`x`) — inline menu to choose CSV or plain text; file saved to `~/.config/shellclock/reports/shellclock-report-YYYY-MM-DD.csv` / `.txt` (directory auto-created); CSV is session-level with columns: Project, Task, Start, End, Duration (h:mm:ss), Notes; plain text mirrors the report view layout; confirmation message shows the full path after successful save
 
 ### Session Editor
 - [x] **Session list** — index, start, end, duration columns for all sessions on a task
 - [x] **Add session** (`n`) — form pre-filled with current time; user adjusts with arrow keys
-- [x] **Edit session** (`e`) — form pre-filled with existing start/end times
+- [x] **Edit session** (`e`) — form pre-filled with existing start/end times and note
 - [x] **Delete session** (`d`) — removes selected session and recalculates totals
 - [x] **Second-level precision** — times use format `YYYY-MM-DD HH:MM:SS`
-- [x] **Tab / Shift+Tab navigation** — move between start and end fields
+- [x] **Session notes** — optional note field (max 120 chars) on every session; editable in the add/edit form via a dedicated note input (Tab/Shift+Tab/Enter to navigate); note is persisted in JSON and shown in the report view
+- [x] **Tab / Shift+Tab navigation** — cycle through start, end, and note fields
 - [x] **Validation** — rejects invalid formats and end-before-start
 - [x] **Running total** — shown below the session list
 - [x] **Layout stability** — scroll hint and error line always reserve fixed height to prevent jitter

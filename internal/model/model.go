@@ -16,6 +16,7 @@ type Session struct {
 	Start           time.Time `json:"start"`
 	End             time.Time `json:"end,omitempty"`
 	DurationSeconds int64     `json:"duration_seconds"`
+	Notes           string    `json:"notes,omitempty"`
 }
 
 // Task belongs to a Project and holds zero or more Sessions.

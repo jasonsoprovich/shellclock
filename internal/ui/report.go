@@ -21,12 +21,14 @@ const (
 	reportRowProject reportRowKind = iota
 	reportRowTask
 	reportRowBlank
+	reportRowSessionNote
 )
 
 type reportRow struct {
 	kind      reportRowKind
 	projectID string
 	taskID    string // empty for project rows
+	note      string // set for reportRowSessionNote rows
 }
 
 // ── Model ──────────────────────────────────────────────────────────────────
@@ -63,6 +65,11 @@ func (m *ReportModel) buildRows() {
 		m.rows = append(m.rows, reportRow{kind: reportRowProject, projectID: p.ID})
 		for _, t := range p.Tasks {
 			m.rows = append(m.rows, reportRow{kind: reportRowTask, projectID: p.ID, taskID: t.ID})
+			for _, sess := range t.Sessions {
+				if sess.Notes != "" {
+					m.rows = append(m.rows, reportRow{kind: reportRowSessionNote, projectID: p.ID, taskID: t.ID, note: sess.Notes})
+				}
+			}
 		}
 		m.rows = append(m.rows, reportRow{kind: reportRowBlank})
 	}
@@ -310,6 +317,11 @@ func (m ReportModel) View() string {
 				durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
 					Render(StyleDuration.Render(util.FormatDuration(secs)))
 				body.WriteString(nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + durCol)
+				body.WriteString("\n")
+
+			case reportRowSessionNote:
+				note := truncate(row.note, innerW-8) // "      ↳ " prefix = 8
+				body.WriteString(StyleDimmed.Render("      ↳ " + note))
 				body.WriteString("\n")
 			}
 		}

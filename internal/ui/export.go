@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -27,7 +26,7 @@ func reportsDir() (string, error) {
 }
 
 // exportCSV writes a CSV report to ~/.config/shellclock/reports/ and returns the full path.
-// Columns: Project, Task, Total Duration (h:mm:ss), Total Sessions
+// Columns: Project, Task, Start, End, Duration (h:mm:ss), Notes
 func exportCSV(store *model.Store) (string, error) {
 	dir, err := reportsDir()
 	if err != nil {
@@ -41,15 +40,23 @@ func exportCSV(store *model.Store) (string, error) {
 	defer f.Close()
 
 	w := csv.NewWriter(f)
-	_ = w.Write([]string{"Project", "Task", "Total Duration (h:mm:ss)", "Total Sessions"})
+	_ = w.Write([]string{"Project", "Task", "Start", "End", "Duration (h:mm:ss)", "Notes"})
 	for _, p := range store.Projects {
 		for _, t := range p.Tasks {
-			_ = w.Write([]string{
-				p.Name,
-				t.Name,
-				util.FormatDurationShort(t.TotalSeconds()),
-				strconv.Itoa(len(t.Sessions)),
-			})
+			for _, sess := range t.Sessions {
+				endStr := ""
+				if !sess.End.IsZero() {
+					endStr = sess.End.Format("2006-01-02 15:04:05")
+				}
+				_ = w.Write([]string{
+					p.Name,
+					t.Name,
+					sess.Start.Format("2006-01-02 15:04:05"),
+					endStr,
+					util.FormatDurationShort(sess.DurationSeconds),
+					sess.Notes,
+				})
+			}
 		}
 	}
 	w.Flush()
