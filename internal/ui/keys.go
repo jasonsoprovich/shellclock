@@ -32,6 +32,7 @@ type KeyMap struct {
 	IdleWarn     key.Binding
 	Rate         key.Binding
 	Earnings     key.Binding
+	Sort         key.Binding
 	Quit         key.Binding
 	Help         key.Binding
 	HelpScreen   key.Binding
@@ -66,6 +67,7 @@ func DefaultKeyMap() KeyMap {
 		IdleWarn:    key.NewBinding(key.WithKeys("W"), key.WithHelp("W", "idle warn settings")),
 		Rate:        key.NewBinding(key.WithKeys("$"), key.WithHelp("$", "set hourly rate")),
 		Earnings:    key.NewBinding(key.WithKeys("$"), key.WithHelp("$", "toggle earnings")),
+		Sort:        key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "sort projects")),
 		Quit:        key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 		Help:        key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more keys")),
 		HelpScreen:  key.NewBinding(key.WithKeys("H"), key.WithHelp("H", "help")),
@@ -97,7 +99,7 @@ func (k treeKeyMap) FullHelp() [][]key.Binding {
 		k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker,
 		k.km.TreeTimer, k.km.Stop, k.km.Reset, k.km.EditTags,
 		k.km.Rate, k.km.Summary, k.km.BackupInfo, k.km.IdleWarn,
-		k.km.MasterReset, k.km.HelpScreen, k.km.Quit, k.km.Help,
+		k.km.Sort, k.km.MasterReset, k.km.HelpScreen, k.km.Quit, k.km.Help,
 	}
 
 	const colWidth = 24 // estimated chars per column including separator

@@ -67,6 +67,20 @@ func (p *Project) TotalSeconds() int64 {
 // HasRate reports whether this project has an hourly rate configured.
 func (p *Project) HasRate() bool { return p.HourlyRate > 0 }
 
+// LastUsedTime returns the most recent session end time across all tasks.
+// Returns zero time if no sessions exist.
+func (p *Project) LastUsedTime() time.Time {
+	var t time.Time
+	for _, task := range p.Tasks {
+		for _, sess := range task.Sessions {
+			if sess.End.After(t) {
+				t = sess.End
+			}
+		}
+	}
+	return t
+}
+
 // Earnings returns the total earnings for this project based on its hourly
 // rate and total tracked time. Returns 0 if no rate is set.
 func (p *Project) Earnings() float64 {
@@ -93,7 +107,8 @@ type Store struct {
 	ActiveTimer  *ActiveTimer     `json:"active_timer,omitempty"`
 	Theme        string           `json:"theme,omitempty"`
 	IdleWarn     IdleWarnSettings `json:"idle_warn"`
-	ShowEarnings bool             `json:"show_earnings,omitempty"` // display earnings column in report
+	ShowEarnings     bool             `json:"show_earnings,omitempty"`      // display earnings column in report
+	ProjectSortOrder int              `json:"project_sort_order,omitempty"` // 0=nameAsc 1=nameDesc 2=recentDesc 3=recentAsc
 
 	path string
 }

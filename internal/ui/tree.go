@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +16,31 @@ import (
 	"github.com/jasonsoprovich/shellclock/internal/model"
 	"github.com/jasonsoprovich/shellclock/internal/util"
 )
+
+// sortOrder controls how projects are ordered in the tree.
+type sortOrder int
+
+const (
+	sortNameAsc    sortOrder = iota // A → Z
+	sortNameDesc                    // Z → A
+	sortRecentDesc                  // most recently used first
+	sortRecentAsc                   // least recently used first
+	sortOrderCount                  // sentinel for cycling
+)
+
+func (s sortOrder) label() string {
+	switch s {
+	case sortNameAsc:
+		return "name ↑"
+	case sortNameDesc:
+		return "name ↓"
+	case sortRecentDesc:
+		return "recent ↓"
+	case sortRecentAsc:
+		return "recent ↑"
+	}
+	return ""
+}
 
 // renderLogo returns a 3-line lipgloss bordered wordmark for "shellclock".
 func renderLogo() string {
@@ -134,10 +160,41 @@ func NewTreeModel(store *model.Store, keys KeyMap) TreeModel {
 	return m
 }
 
+// sortedProjects returns the store's projects in the current sort order.
+func (m *TreeModel) sortedProjects() []model.Project {
+	projects := make([]model.Project, len(m.store.Projects))
+	copy(projects, m.store.Projects)
+
+	so := sortOrder(m.store.ProjectSortOrder)
+	switch so {
+	case sortNameAsc:
+		sort.SliceStable(projects, func(i, j int) bool {
+			return strings.ToLower(projects[i].Name) < strings.ToLower(projects[j].Name)
+		})
+	case sortNameDesc:
+		sort.SliceStable(projects, func(i, j int) bool {
+			return strings.ToLower(projects[i].Name) > strings.ToLower(projects[j].Name)
+		})
+	case sortRecentDesc:
+		sort.SliceStable(projects, func(i, j int) bool {
+			ti := projects[i].LastUsedTime()
+			tj := projects[j].LastUsedTime()
+			return ti.After(tj)
+		})
+	case sortRecentAsc:
+		sort.SliceStable(projects, func(i, j int) bool {
+			ti := projects[i].LastUsedTime()
+			tj := projects[j].LastUsedTime()
+			return ti.Before(tj)
+		})
+	}
+	return projects
+}
+
 // buildItems flattens the project/task tree into a navigable list.
 func (m *TreeModel) buildItems() {
 	m.items = nil
-	for _, p := range m.store.Projects {
+	for _, p := range m.sortedProjects() {
 		exp := m.expanded[p.ID]
 		m.items = append(m.items, treeItem{
 			isProject: true,
@@ -723,6 +780,14 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			cmd = m.masterResetInput.Focus()
 			return m, cmd
 
+		case "o":
+			next := (sortOrder(m.store.ProjectSortOrder) + 1) % sortOrderCount
+			m.store.ProjectSortOrder = int(next)
+			_ = m.store.Save()
+			m.buildItems()
+			m.clampCursor()
+			m.scrollToCursor()
+
 		case "q":
 			m.WantsQuit = true
 		}
@@ -780,9 +845,10 @@ func (m *TreeModel) renderHeader() string {
 		totalStr = "no time tracked"
 	}
 
+	sortLabel := sortOrder(m.store.ProjectSortOrder).label()
 	dateStr := time.Now().Format("Mon Jan 2, 2006")
-	stats := fmt.Sprintf("%s  ·  %d %s  ·  %d %s  ·  %s",
-		dateStr, nProjects, pWord, nTasks, tWord, totalStr)
+	stats := fmt.Sprintf("%s  ·  %d %s  ·  %d %s  ·  %s  ·  sort: %s",
+		dateStr, nProjects, pWord, nTasks, tWord, totalStr, sortLabel)
 	sb.WriteString(StyleDimmed.Render(stats))
 	return sb.String()
 }
