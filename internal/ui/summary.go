@@ -18,6 +18,7 @@ type summaryScope int
 const (
 	scopeToday summaryScope = iota
 	scopeWeek
+	scopeMonth
 )
 
 type summaryRowKind int
@@ -79,6 +80,8 @@ func (m *SummaryModel) buildRows() {
 		}
 		monday := now.AddDate(0, 0, -(wd - 1))
 		windowStart = time.Date(monday.Year(), monday.Month(), monday.Day(), 0, 0, 0, 0, now.Location())
+	case scopeMonth:
+		windowStart = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	}
 
 	m.rows = nil
@@ -152,9 +155,12 @@ func (m SummaryModel) Update(msg tea.Msg) (SummaryModel, tea.Cmd) {
 		case "q", "esc":
 			m.SwitchToTree = true
 		case "w":
-			if m.scope == scopeToday {
+			switch m.scope {
+			case scopeToday:
 				m.scope = scopeWeek
-			} else {
+			case scopeWeek:
+				m.scope = scopeMonth
+			default:
 				m.scope = scopeToday
 			}
 			m.offset = 0
@@ -203,8 +209,11 @@ func (m SummaryModel) View() string {
 
 	// ── Title ─────────────────────────────────────────────────────────────
 	scopeLabel := "Today"
-	if m.scope == scopeWeek {
+	switch m.scope {
+	case scopeWeek:
 		scopeLabel = "This Week"
+	case scopeMonth:
+		scopeLabel = "This Month"
 	}
 	title := StyleTitle.Render("◷  Summary — " + scopeLabel)
 	toggleHint := StyleDimmed.Render("  [w] toggle")
@@ -223,10 +232,13 @@ func (m SummaryModel) View() string {
 
 	if len(m.rows) == 0 {
 		emptyMsg := "No sessions logged "
-		if m.scope == scopeToday {
+		switch m.scope {
+		case scopeToday:
 			emptyMsg += "today."
-		} else {
+		case scopeWeek:
 			emptyMsg += "this week."
+		case scopeMonth:
+			emptyMsg += "this month."
 		}
 		sb.WriteString(StyleDimmed.Render(emptyMsg))
 		sb.WriteString("\n")
@@ -327,14 +339,14 @@ func (m *SummaryModel) renderRow(row summaryRow, innerW int) string {
 type summaryKeyMap struct{ km KeyMap }
 
 func (k summaryKeyMap) ShortHelp() []key.Binding {
-	toggleWeek := key.NewBinding(key.WithKeys("w"), key.WithHelp("w", "toggle week/today"))
-	return []key.Binding{k.km.Up, k.km.Down, toggleWeek, k.km.Esc}
+	toggleScope := key.NewBinding(key.WithKeys("w"), key.WithHelp("w", "cycle today/week/month"))
+	return []key.Binding{k.km.Up, k.km.Down, toggleScope, k.km.Esc}
 }
 
 func (k summaryKeyMap) FullHelp() [][]key.Binding {
-	toggleWeek := key.NewBinding(key.WithKeys("w"), key.WithHelp("w", "toggle week/today"))
+	toggleScope := key.NewBinding(key.WithKeys("w"), key.WithHelp("w", "cycle today/week/month"))
 	return [][]key.Binding{
 		{k.km.Up, k.km.Down},
-		{toggleWeek, k.km.Esc},
+		{toggleScope, k.km.Esc},
 	}
 }
