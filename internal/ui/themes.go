@@ -36,22 +36,6 @@ var allThemes = []Theme{
 		Red: "#f38ba8", Mauve: "#cba6f7", Peach: "#fab387", Teal: "#94e2d5",
 	},
 	{
-		// https://github.com/catppuccin/catppuccin
-		Name: "catppuccin-macchiato", Label: "Catppuccin Macchiato", Dark: true,
-		Base: "#24273a", Surface: "#363a4f", Overlay: "#494d64",
-		Text: "#cad3f5", Subtext: "#a5adcb",
-		Blue: "#8aadf4", Green: "#a6da95", Yellow: "#eed49f",
-		Red: "#ed8796", Mauve: "#c6a0f6", Peach: "#f5a97f", Teal: "#8bd5ca",
-	},
-	{
-		// https://github.com/catppuccin/catppuccin
-		Name: "catppuccin-frappe", Label: "Catppuccin Frappé", Dark: true,
-		Base: "#303446", Surface: "#414559", Overlay: "#51576d",
-		Text: "#c6d0f5", Subtext: "#a5adce",
-		Blue: "#8caaee", Green: "#a6d189", Yellow: "#e5c890",
-		Red: "#e78284", Mauve: "#ca9ee6", Peach: "#ef9f76", Teal: "#81c8be",
-	},
-	{
 		Name: "catppuccin-latte", Label: "Catppuccin Latte", Dark: false,
 		Base: "#eff1f5", Surface: "#ccd0da", Overlay: "#9ca0b0",
 		Text: "#4c4f69", Subtext: "#6c6f85",
@@ -76,6 +60,17 @@ var allThemes = []Theme{
 		Text: "#cccac2", Subtext: "#607080",
 		Blue: "#73d0ff", Green: "#bae67e", Yellow: "#ffd173",
 		Red: "#f28779", Mauve: "#dfbfff", Peach: "#ffad66", Teal: "#5ccfe6",
+	},
+
+	// ── C ─────────────────────────────────────────────────────────────────
+
+	{
+		// https://github.com/wesbos/cobalt2 — Cobalt2 by Wes Bos
+		Name: "cobalt2", Label: "Cobalt2", Dark: true,
+		Base: "#193549", Surface: "#1f4662", Overlay: "#2e6890",
+		Text: "#ffffff", Subtext: "#7ea8c9",
+		Blue: "#0088ff", Green: "#3ad900", Yellow: "#ffc600",
+		Red: "#ff628c", Mauve: "#9effff", Peach: "#ff9d00", Teal: "#80fcff",
 	},
 
 	// ── D ─────────────────────────────────────────────────────────────────
@@ -266,14 +261,6 @@ var allThemes = []Theme{
 		Text: "#e0def4", Subtext: "#908caa",
 		Blue: "#c4a7e7", Green: "#9ccfd8", Yellow: "#f6c177",
 		Red: "#eb6f92", Mauve: "#ebbcba", Peach: "#31748f", Teal: "#9ccfd8",
-	},
-	{
-		// https://rosepinetheme.com/ — moon (dark)
-		Name: "rose-pine-moon", Label: "Rosé Pine Moon", Dark: true,
-		Base: "#232136", Surface: "#2a273f", Overlay: "#393552",
-		Text: "#e0def4", Subtext: "#6e6a86",
-		Blue: "#c4a7e7", Green: "#9ccfd8", Yellow: "#f6c177",
-		Red: "#eb6f92", Mauve: "#ea9a97", Peach: "#3e8fb0", Teal: "#9ccfd8",
 	},
 	{
 		// https://rosepinetheme.com/ — dawn (light)

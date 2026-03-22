@@ -19,6 +19,7 @@ type ThemePickerModel struct {
 	store         *model.Store
 	keys          KeyMap
 	cursor        int
+	offset        int
 	width         int
 	height        int
 	help          help.Model
@@ -54,12 +55,14 @@ func (m ThemePickerModel) Update(msg tea.Msg) (ThemePickerModel, tea.Cmd) {
 			if m.cursor > 0 {
 				m.cursor--
 				ApplyTheme(allThemes[m.cursor])
+				m.clampOffset()
 			}
 
 		case "down", "j":
 			if m.cursor < len(allThemes)-1 {
 				m.cursor++
 				ApplyTheme(allThemes[m.cursor])
+				m.clampOffset()
 			}
 
 		case "enter":
@@ -77,11 +80,36 @@ func (m ThemePickerModel) Update(msg tea.Msg) (ThemePickerModel, tea.Cmd) {
 	return m, nil
 }
 
+// visibleLines returns how many theme rows fit between the header and footer.
+// Overhead: 2 border + title + separator + blank (3) + blank + instruction + blank + help (4) = 9.
+func (m *ThemePickerModel) visibleLines() int {
+	h := m.height
+	if h == 0 {
+		h = 24
+	}
+	v := h - 9
+	if v < 1 {
+		v = 1
+	}
+	return v
+}
+
+// clampOffset keeps the offset window around the cursor so the selected row
+// is always visible.
+func (m *ThemePickerModel) clampOffset() {
+	vl := m.visibleLines()
+	if m.cursor < m.offset {
+		m.offset = m.cursor
+	} else if m.cursor >= m.offset+vl {
+		m.offset = m.cursor - vl + 1
+	}
+}
+
 // ── View ─────────────────────────────────────────────────────────────────────
 
 // labelWidth is the display width of the longest theme label, used for column
-// alignment.  "Catppuccin Macchiato" = 20 chars.
-const labelWidth = 20
+// alignment.  "Material Palenight" = 18 chars.
+const labelWidth = 18
 
 // swatchColors returns the seven representative colors shown as ■ squares.
 func swatchColors(t Theme) []lipgloss.Color {
@@ -107,8 +135,21 @@ func (m ThemePickerModel) View() string {
 	sb.WriteString("\n\n")
 
 	// ── Theme list ─────────────────────────────────────────────────────────
-	for i, t := range allThemes {
-		selected := i == m.cursor
+	vl := m.visibleLines()
+	end := m.offset + vl
+	if end > len(allThemes) {
+		end = len(allThemes)
+	}
+
+	if m.offset > 0 {
+		sb.WriteString(StyleDimmed.Render("  ↑ more"))
+		sb.WriteString("\n")
+		vl-- // consumed one visible line for the hint
+	}
+
+	for i, t := range allThemes[m.offset:end] {
+		idx := m.offset + i
+		selected := idx == m.cursor
 
 		// Indicator — 2 visible chars.
 		var indicator string
@@ -145,6 +186,11 @@ func (m ThemePickerModel) View() string {
 		sb.WriteString(styledName)
 		sb.WriteString(strings.Repeat(" ", namePad+2)) // gap after label
 		sb.WriteString(swatches)
+		sb.WriteString("\n")
+	}
+
+	if end < len(allThemes) {
+		sb.WriteString(StyleDimmed.Render("  ↓ more"))
 		sb.WriteString("\n")
 	}
 
