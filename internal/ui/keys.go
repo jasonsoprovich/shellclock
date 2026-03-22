@@ -53,7 +53,7 @@ func DefaultKeyMap() KeyMap {
 		Rename:      key.NewBinding(key.WithKeys("E"), key.WithHelp("E", "rename")),
 		EditTags:    key.NewBinding(key.WithKeys("#"), key.WithHelp("#", "edit tags")),
 		Start:       key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "start/pause/resume")),
-		TreeTimer:   key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "play/pause timer")),
+		TreeTimer:   key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "start/pause timer")),
 		Stop:        key.NewBinding(key.WithKeys("S"), key.WithHelp("S", "stop & save")),
 		Reset:       key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reset")),
 		Report:      key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "report")),

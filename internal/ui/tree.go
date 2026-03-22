@@ -850,11 +850,9 @@ func (m TreeModel) View() string {
 	}
 
 	if len(m.items) == 0 {
-		hint := StyleDimmed.Render("No projects yet — press N to create one.")
-		sb.WriteString(hint)
-		sb.WriteString("\n")
-		// Fill remaining list rows.
-		for i := 1; i < lh; i++ {
+		sb.WriteString(renderWelcomeTutorial())
+		// Fill remaining list rows after tutorial (tutorial is 8 lines).
+		for i := 8; i < lh; i++ {
 			sb.WriteString("\n")
 		}
 	} else {
@@ -982,6 +980,25 @@ func (m TreeModel) renderItem(i, innerW int) string {
 		line += StyleDuration.Render(durText)
 	}
 	return line
+}
+
+// renderWelcomeTutorial returns a concise quick-start guide shown when there
+// are no projects yet. It is exactly 8 lines tall.
+func renderWelcomeTutorial() string {
+	step := func(k, desc string) string {
+		return StyleInputLabel.Render(k) + "  " + StyleTask.Render(desc)
+	}
+	lines := []string{
+		StyleTitle.Render("Welcome to shellclock!"),
+		StyleDimmed.Render("Quick start:"),
+		step("N", "Create a new project"),
+		step("n", "Add a task to the selected project"),
+		step("p", "Start or pause the timer on a selected task"),
+		step("S", "Stop and save the running timer as a session"),
+		step("r", "Reset the running timer"),
+		StyleDimmed.Render("Press H for full help and all available commands."),
+	}
+	return strings.Join(lines, "\n")
 }
 
 // highlightRow renders text using the selection style pinned to exactly w
