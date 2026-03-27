@@ -624,10 +624,10 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 				m.SwitchToTaskDetail = true
 			}
 
-		case "s":
+		case "v":
 			m.SwitchToSummary = true
 
-		case "p":
+		case "s":
 			at := m.store.ActiveTimer
 			if at == nil {
 				// Start timer for the focused task.

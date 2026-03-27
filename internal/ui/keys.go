@@ -19,7 +19,7 @@ type KeyMap struct {
 	Rename       key.Binding
 	EditTags     key.Binding
 	Start        key.Binding
-	TreeTimer    key.Binding // start/pause/resume timer from tree view (p)
+	TreeTimer    key.Binding // start/pause/resume timer from tree view (s)
 	Stop         key.Binding
 	Reset        key.Binding
 	Report       key.Binding
@@ -54,11 +54,11 @@ func DefaultKeyMap() KeyMap {
 		Rename:      key.NewBinding(key.WithKeys("E"), key.WithHelp("E", "rename")),
 		EditTags:    key.NewBinding(key.WithKeys("#"), key.WithHelp("#", "edit tags")),
 		Start:       key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "start/pause/resume")),
-		TreeTimer:   key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "start/pause timer")),
+		TreeTimer:   key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "start/pause/resume")),
 		Stop:        key.NewBinding(key.WithKeys("S"), key.WithHelp("S", "stop & save")),
 		Reset:       key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reset")),
 		Report:      key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "report")),
-		Summary:     key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "summary")),
+		Summary:     key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "summary")),
 		ThemePicker: key.NewBinding(key.WithKeys("T"), key.WithHelp("T", "theme")),
 		Export:      key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "export")),
 		Filter:      key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "filter by tag")),
@@ -83,10 +83,10 @@ type treeKeyMap struct {
 
 func (k treeKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
-		k.km.Up, k.km.Down,
+		k.km.TreeTimer, k.km.Stop,
 		k.km.NewProject, k.km.NewTask,
-		k.km.Enter, k.km.Delete,
-		k.km.Summary, k.km.Report, k.km.Quit, k.km.HelpScreen, k.km.Help,
+		k.km.Enter,
+		k.km.HelpScreen, k.km.Help,
 	}
 }
 
@@ -94,11 +94,11 @@ func (k treeKeyMap) ShortHelp() []key.Binding {
 // terminal width. Each column is ~24 chars wide (longest entry + separator).
 func (k treeKeyMap) FullHelp() [][]key.Binding {
 	all := []key.Binding{
-		k.km.Up, k.km.Down, k.km.Left, k.km.Right,
-		k.km.NewProject, k.km.NewTask, k.km.Rename, k.km.Delete,
-		k.km.Enter, k.km.Edit, k.km.Report, k.km.ThemePicker,
-		k.km.TreeTimer, k.km.Stop, k.km.Reset, k.km.EditTags,
-		k.km.Rate, k.km.Summary, k.km.BackupInfo, k.km.IdleWarn,
+		k.km.TreeTimer, k.km.Stop, k.km.Reset,
+		k.km.NewTask, k.km.NewProject, k.km.Rename, k.km.Delete,
+		k.km.Enter, k.km.Up, k.km.Down, k.km.Left, k.km.Right,
+		k.km.Edit, k.km.Report, k.km.Summary, k.km.ThemePicker,
+		k.km.Rate, k.km.EditTags, k.km.BackupInfo, k.km.IdleWarn,
 		k.km.Sort, k.km.MasterReset, k.km.HelpScreen, k.km.Quit, k.km.Help,
 	}
 
