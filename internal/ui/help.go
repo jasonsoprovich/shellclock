@@ -34,6 +34,22 @@ func (m HelpModel) Update(msg tea.Msg) (HelpModel, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			if m.offset > 0 {
+				m.offset--
+			}
+		case tea.MouseButtonWheelDown:
+			max := len(m.lines) - m.visibleLines()
+			if max < 0 {
+				max = 0
+			}
+			if m.offset < max {
+				m.offset++
+			}
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "esc":

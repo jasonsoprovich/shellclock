@@ -289,6 +289,21 @@ func (m TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 		m.buildItems()
 		return m, nil
 
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			if m.cursor > 0 {
+				m.cursor--
+				m.scrollToCursor()
+			}
+		case tea.MouseButtonWheelDown:
+			if m.cursor < len(m.items)-1 {
+				m.cursor++
+				m.scrollToCursor()
+			}
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		// Always quit on ctrl+c; handled globally in App but guard here too.
 		if msg.String() == "ctrl+c" {

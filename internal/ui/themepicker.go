@@ -49,6 +49,23 @@ func (m ThemePickerModel) Update(msg tea.Msg) (ThemePickerModel, tea.Cmd) {
 		m.height = msg.Height
 		return m, nil
 
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			if m.cursor > 0 {
+				m.cursor--
+				ApplyTheme(allThemes[m.cursor])
+				m.clampOffset()
+			}
+		case tea.MouseButtonWheelDown:
+			if m.cursor < len(allThemes)-1 {
+				m.cursor++
+				ApplyTheme(allThemes[m.cursor])
+				m.clampOffset()
+			}
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up", "k":

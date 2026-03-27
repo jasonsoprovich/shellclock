@@ -277,6 +277,23 @@ func (m TaskDetailModel) Update(msg tea.Msg) (TaskDetailModel, tea.Cmd) {
 		return m, nil
 	}
 
+	if mouse, ok := msg.(tea.MouseMsg); ok {
+		sessions := m.sessions()
+		switch mouse.Button {
+		case tea.MouseButtonWheelUp:
+			if m.cursor > 0 {
+				m.cursor--
+				m.scrollToCursor()
+			}
+		case tea.MouseButtonWheelDown:
+			if m.cursor < len(sessions)-1 {
+				m.cursor++
+				m.scrollToCursor()
+			}
+		}
+		return m, nil
+	}
+
 	key, isKey := msg.(tea.KeyMsg)
 
 	// ── Form mode ────────────────────────────────────────────────────────────

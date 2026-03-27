@@ -150,6 +150,22 @@ func (m SummaryModel) Update(msg tea.Msg) (SummaryModel, tea.Cmd) {
 		// requiring the user to reopen the view.
 		m.buildRows()
 
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			if m.offset > 0 {
+				m.offset--
+			}
+		case tea.MouseButtonWheelDown:
+			max := len(m.rows) - m.visibleLines()
+			if max < 0 {
+				max = 0
+			}
+			if m.offset < max {
+				m.offset++
+			}
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "esc":

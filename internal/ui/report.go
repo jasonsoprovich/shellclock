@@ -170,6 +170,15 @@ func (m ReportModel) Update(msg tea.Msg) (ReportModel, tea.Cmd) {
 		m.help.Width = msg.Width - 4
 		return m, nil
 
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			m.scrollUp()
+		case tea.MouseButtonWheelDown:
+			m.scrollDown()
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		if m.tagPicker {
 			switch msg.String() {
