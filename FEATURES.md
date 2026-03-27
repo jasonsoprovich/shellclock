@@ -39,6 +39,7 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 ### Report View
 - [x] **Project and task rows** — hierarchical summary with totals
 - [x] **Progress bars** — proportional `█░` bars; project bars relative to grand total, task bars relative to parent project
+- [x] **Percentage column** — each project row shows its percentage of grand total; each task row shows its percentage of the parent project total
 - [x] **Grand total** — shown right-aligned in the header
 - [x] **Active timer notice** — running timer's elapsed time shown at top of report (not yet committed to totals)
 - [x] **Session notes in report** — sessions with notes show a dimmed `↳ note` line beneath the task row
@@ -100,17 +101,23 @@ Status key: ✅ Done · 🚧 In Progress · 📋 Planned
 
 ### Summary View
 
-- [x] **Summary view** (`s` from tree view) — shows all sessions logged today (default) or this week, grouped by project → task. Each session row displays its time range (e.g., `10:05 AM — 11:30 AM`) and duration, right-aligned. Project and task subtotals shown. Grand total at the bottom. Toggle between today and this week with `w`. Scroll with `↑`/`↓` or `j`/`k`; dismiss with `esc` or `q`. Empty-state message when no sessions exist for the selected period.
+- [x] **Summary view** (`s` from tree view) — shows all sessions logged today (default), this week, or this month, grouped by project → task. Each session row displays its time range (e.g., `10:05 AM — 11:30 AM`) and duration, right-aligned. Project and task subtotals shown. Grand total at the bottom. Cycle between today/week/month with `w`. Scroll with `↑`/`↓` or `j`/`k`; dismiss with `esc` or `q`. Empty-state message when no sessions exist for the selected period.
 - [x] **Timer key change in tree view** — to free `s` for the summary, the tree-view timer start/pause/resume moved from `s` to `p`. Task detail view is unchanged (`s`/`enter` still controls the timer there).
 
 ### Help Screen
 
 - [x] **In-app help screen** (`H` from any view) — full-screen scrollable reference panel covering all keybindings organized by view (Tree, Task Detail, Session Editor, Report, Theme Picker, Summary), backup info, CLI commands, and the Toggl importer. Scroll with `↑`/`↓` or `j`/`k`; dismiss with `esc` or `q`. Accessible globally — `H` is intercepted in the root App model before any view-specific handling.
 
+### Project Sorting
+
+- [x] **Project sort order** (`o` in tree view) — cycles through four sort modes: name A→Z, name Z→A, most recently used first, least recently used first. Current sort label shown in the stats subline of the wordmark header. Sort order persisted in JSON under `project_sort_order`.
+
 ### UI / Polish
 - [x] **Rounded-border panels** — all views use Lip Gloss `RoundedBorder`
 - [x] **Context-sensitive help bar** — bottom bar shows keys relevant to the current view and mode
 - [x] **Full help toggle** (`?`) — expands help bar to show all bindings
+- [x] **Mouse & trackpad scroll** — scroll events from mouse wheel and trackpad work throughout all scrollable views
+- [x] **New user tutorial** — first-launch walkthrough shown inline in the tree view to guide new users through creating a project, task, and starting a timer
 - [x] **Catppuccin Mocha default** — colour palette initialised to Mocha at startup
 - [x] **Highlight bleed fix** — selected rows manually pre-padded to content width so highlight never wraps onto a second line
 - [x] **Delete confirmation modal** — pressing `d` on any project, task, or session shows a centered overlay modal with the item name and `[y] confirm / [n] / [esc] cancel`; underlying view is dimmed; nothing deleted until `y` is pressed

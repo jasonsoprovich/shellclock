@@ -11,8 +11,8 @@ Built with the [Charm](https://charm.sh) stack: Bubble Tea, Lip Gloss, and Bubbl
 - **Projects & Tasks** — hierarchical tree: projects contain tasks, tasks accumulate sessions
 - **Live Timer** — start, pause, resume, reset, and stop a timer on any task; timer persists across restarts
 - **Session Editor** — view all recorded sessions for a task; add, edit, or delete individual sessions with second-level precision
-- **Summary View** — quick daily or weekly breakdown of sessions, grouped by project and task
-- **Report View** — visual summary with progress bars showing time distribution across all projects and tasks
+- **Summary View** — quick daily, weekly, or monthly breakdown of sessions, grouped by project and task
+- **Report View** — visual summary with progress bars and percentage breakdown showing time distribution across all projects and tasks
 - **Project Tags** — tag projects with arbitrary labels; filter the report to a specific tag
 - **Hourly Rate & Earnings** — set a rate per project; toggle an earnings column in the report
 - **Idle Timer Warning** — flashing badge when a timer has been running past a configurable threshold
@@ -20,6 +20,8 @@ Built with the [Charm](https://charm.sh) stack: Bubble Tea, Lip Gloss, and Bubbl
 - **Theme System** — 31 built-in themes (Catppuccin family, Dracula, Nord, Tokyo Night, Gruvbox, Rosé Pine, and more); live preview in the picker; selection persists across launches
 - **In-app Help** — press `H` from anywhere to open a full scrollable reference covering every key, view, and CLI command
 - **Toggl Import** — import a Toggl Detailed CSV export from the command line without opening the TUI
+- **Project Sorting** — cycle sort order in the tree by name or recent use (`o`)
+- **Mouse & Scroll Support** — mouse and trackpad scroll work throughout the TUI
 - **Keyboard-driven** — vim-style navigation throughout; context-sensitive help bar always visible
 - **No external dependencies** — single JSON file, no database, no network
 
@@ -140,6 +142,7 @@ The collapsible project/task list. When a timer is running, the active task and 
 | `T` | Open theme picker |
 | `$` | Set hourly rate for focused project |
 | `B` | Show backup info |
+| `o` | Cycle project sort order (name ↑/↓, recent ↓/↑) |
 | `W` | Idle warn settings |
 | `X` | System reset (requires typing CONFIRM) |
 | `H` | Open help screen |
@@ -173,13 +176,13 @@ The timer section shows `● RUNNING HH:MM:SS` or `⏸ PAUSED HH:MM:SS` and the 
 
 ### Summary View
 
-Press `s` from the tree to see sessions logged today (default) or this week (toggle with `w`). Sessions are grouped by project and task with time ranges and durations. A grand total appears at the bottom.
+Press `s` from the tree to see sessions logged today (default), this week, or this month (cycle with `w`). Sessions are grouped by project and task with time ranges and durations. A grand total appears at the bottom.
 
 | Key | Action |
 |-----|--------|
 | `↑` / `k` | Scroll up |
 | `↓` / `j` | Scroll down |
-| `w` | Toggle between today and this week |
+| `w` | Cycle between today, this week, and this month |
 | `esc` / `q` | Return to tree |
 
 ---
