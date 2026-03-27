@@ -267,14 +267,17 @@ func (m ReportModel) View() string {
 	//   durW    = 13  (right-aligned duration, e.g. "108h 48m 00s")
 	//   barW    = 20  (progress bar)
 	//   nameGap = 2   (space between name and bar)
-	//   barGap  = 1   (space between bar and duration)
+	//   barGap  = 1   (space between bar and pct)
+	//   pctW    = 5   (percentage label, e.g. " 100%")
+	//   pctGap  = 1   (space between pct and duration)
 	//   earnW   = 10  (earnings, e.g. "$99999.99") — only when ShowEarnings
 	//   earnGap = 2
 	//   nameW   = remainder
 	const durW, barW, nameGap, barGap = 13, 20, 2, 1
+	const pctW, pctGap = 5, 1
 	const earnW, earnGap = 10, 2
 	showEarnings := m.store.ShowEarnings
-	nameW := innerW - barW - nameGap - barGap - durW
+	nameW := innerW - barW - nameGap - barGap - pctW - pctGap - durW
 	if showEarnings {
 		nameW -= earnGap + earnW
 	}
@@ -400,9 +403,15 @@ func (m ReportModel) View() string {
 					StyleProject.Render("▸ " + name),
 				)
 				barCol := renderBar(secs, grandTotal, barW)
+				pctStr := ""
+				if grandTotal > 0 {
+					pctStr = fmt.Sprintf("%d%%", secs*100/grandTotal)
+				}
+				pctCol := lipgloss.NewStyle().Width(pctW).Align(lipgloss.Right).
+					Render(StyleDimmed.Render(pctStr))
 				durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
 					Render(StyleDuration.Render(util.FormatDuration(secs)))
-				line := nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + durCol
+				line := nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + pctCol + strings.Repeat(" ", pctGap) + durCol
 				if showEarnings {
 					earnStr := ""
 					if p.HasRate() {
@@ -422,14 +431,21 @@ func (m ReportModel) View() string {
 					continue
 				}
 				secs := t.TotalSeconds()
+				projTotal := p.TotalSeconds()
 				name := truncate(t.Name, nameW-4) // "  · " prefix = 4
 				nameCol := lipgloss.NewStyle().Width(nameW).Render(
 					StyleDimmed.Render("  · ") + StyleTask.Render(name),
 				)
-				barCol := renderBar(secs, p.TotalSeconds(), barW)
+				barCol := renderBar(secs, projTotal, barW)
+				pctStr := ""
+				if projTotal > 0 {
+					pctStr = fmt.Sprintf("%d%%", secs*100/projTotal)
+				}
+				pctCol := lipgloss.NewStyle().Width(pctW).Align(lipgloss.Right).
+					Render(StyleDimmed.Render(pctStr))
 				durCol := lipgloss.NewStyle().Width(durW).Align(lipgloss.Right).
 					Render(StyleDuration.Render(util.FormatDuration(secs)))
-				line := nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + durCol
+				line := nameCol + strings.Repeat(" ", nameGap) + barCol + strings.Repeat(" ", barGap) + pctCol + strings.Repeat(" ", pctGap) + durCol
 				if showEarnings {
 					// blank earnings cell for task rows — rate is per project
 					earnCol := lipgloss.NewStyle().Width(earnW).Render("")
